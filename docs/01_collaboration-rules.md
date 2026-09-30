@@ -163,7 +163,7 @@ git config core.hooksPath .githooks   # 각자 clone 후 1회
 ### 4.2 공용 파일 목록 (백성준 소유 — 다른 사람 수정 금지)
 | Repo | 경로 |
 |---|---|
-| front | `src/app/layout.tsx`, `src/app/(main)/layout.tsx`, `src/components/layout/**`(Header, Sidebar, Footer), `src/components/ui/**`(shadcn), `src/components/common/**`(PageHeader, DataTable, 상태·우선순위 배지 등), `src/lib/api/client.ts`, `src/lib/auth/**`, `src/lib/format.ts`, `src/lib/utils.ts`, `src/middleware.ts`, `src/config/menu.ts`, `src/config/badge.ts`, `src/app/globals.css`(디자인 토큰), `components.json`, `package.json`, `tsconfig.json`, `eslint.config.*`, `.prettierrc`, `next.config.*`, `.env.example`, `.gitignore`, `.github/`(workflows 제외) |
+| front | `src/app/layout.tsx`, `src/app/(main)/layout.tsx`, `src/components/layout/**`(Header, Sidebar, Footer), `src/components/ui/**`(shadcn), `src/components/common/**`(PageHeader, DataTable, 상태·우선순위 배지 등), `src/lib/api/client.ts`, `src/lib/auth/**`, `src/lib/format.ts`, `src/lib/utils.ts`, `src/proxy.ts`, `src/config/menu.ts`, `src/config/badge.ts`, `src/app/globals.css`(디자인 토큰), `components.json`, `package.json`, `tsconfig.json`, `eslint.config.*`, `.prettierrc`, `next.config.*`, `.env.example`, `.gitignore`, `.github/`(workflows 제외) |
 | back | `pom.xml`, `HelpNestApplication.java`, `global/**`(config, security, common, error, util — 단 `global/websocket/`은 박민재 소유), `application.yml`, `application-local.yml`, `docker-compose.yml`, `.githooks/**`, `.editorconfig`, `.gitattributes`, `.gitignore`, `mvnw`·`.mvn/`, `.github/`(workflows 제외) |
 | docs | `README.md`, `PRD.md`, `docs/01_collaboration-rules.md`, `claude/**`(공용 CLAUDE.md·agent·skill 원본), `.githooks/**`, `.github/` |
 

@@ -127,13 +127,13 @@ src/
 │  ├─ api/{auth,faq,template,survey,attachment,customer}.ts (백성준)
 │  ├─ api/{ticket,notification,chat}.ts (박민재)
 │  ├─ api/{ai,dashboard,report}.ts     (신수진)
-│  ├─ auth/                            (백성준) Access 메모리 보관, 새로고침 시 refresh, useAuth, AuthGuard(역할 가드)
+│  ├─ auth/                            (백성준) useAuth, AuthGuard(역할 가드) — Access 토큰 메모리 보관·새로고침 시 refresh 는 api/client.ts
 │  └─ ws/stompClient.ts                (박민재)
 ├─ config/menu.ts                      (백성준) 역할별 사이드바 메뉴 정의
 ├─ config/badge.ts                     (백성준) 상태·우선순위·감정 → 배지 variant 매핑
 ├─ lib/format.ts                       (백성준) 날짜·시간·숫자 포맷 함수
 ├─ types/                              도메인별 소유 (auth.ts 백성준 / ticket.ts 박민재 / ai.ts 신수진)
-└─ middleware.ts                       (백성준) 라우트 1차 확인 (Refresh 쿠키 유무) — 최종 권한 판단은 lib/auth의 AuthGuard
+└─ proxy.ts                            (백성준) 라우트 1차 확인 (Refresh 쿠키 유무, Next 16 에서 middleware.ts → proxy.ts) — 최종 권한 판단은 lib/auth의 AuthGuard
 ```
 
 ### 3.1 공용 레이아웃 규칙
@@ -161,7 +161,7 @@ com.helpnest
 ├─ HelpNestApplication.java                 (백성준)
 ├─ global/                                  (백성준) ★ 공용
 │  ├─ config/  SecurityConfig, CorsConfig, JpaAuditingConfig, AsyncConfig, SchedulingConfig
-│  ├─ security/ JwtProvider, JwtAuthFilter, CustomUserDetails, GuestTicketToken, RateLimitFilter
+│  ├─ security/ JwtProperties, JwtProvider, GuestTicketToken, RateLimitFilter (JWT 검증은 OAuth2 Resource Server 가 처리 — 별도 JwtAuthFilter·UserDetails 없음, 컨트롤러는 `@AuthenticationPrincipal Jwt` → `JwtProvider.memberId(jwt)`)
 │  ├─ common/  ApiResponse<T>, PageResponse<T>, BaseTimeEntity
 │  ├─ error/   ErrorCode(interface), CommonErrorCode, BusinessException, GlobalExceptionHandler
 │  └─ websocket/ WebSocketConfig, StompAuthInterceptor      (박민재) ← global 안이지만 박민재 소유
