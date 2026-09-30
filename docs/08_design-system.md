@@ -108,7 +108,7 @@
 ## 5. 컴포넌트 목록
 
 ### 5.1 shadcn/ui (S0에 백성준이 일괄 설치)
-`button`, `input`, `textarea`, `label`, `select`, `checkbox`, `radio-group`, `switch`, `form`, `card`, `badge`, `table`, `dialog`, `alert-dialog`, `sheet`, `dropdown-menu`, `popover`, `tooltip`, `tabs`, `separator`, `skeleton`, `avatar`, `scroll-area`, `pagination`, `sonner`(토스트), `calendar`/`date-picker`(기간 필터), `command`(검색 선택)
+`button`, `input`, `textarea`, `label`, `select`, `checkbox`, `radio-group`, `switch`, `field`(폼 필드 — 최신 shadcn 은 `form` 대신 `field` + react-hook-form), `card`, `badge`, `table`, `dialog`, `alert-dialog`, `sheet`, `dropdown-menu`, `popover`, `tooltip`, `tabs`, `separator`, `skeleton`, `avatar`, `scroll-area`, `pagination`, `sonner`(토스트), `calendar`/`date-picker`(기간 필터), `command`(검색 선택)
 
 ### 5.2 공용 조합 컴포넌트 (백성준, `components/common`)
 | 컴포넌트 | 주요 props | 용도 |

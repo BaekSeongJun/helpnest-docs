@@ -43,7 +43,7 @@
 ### 2.3 구조 규칙
 - 페이지(`page.tsx`)는 조립만, 로직은 도메인 컴포넌트·훅으로
 - 브라우저 상호작용이 있는 컴포넌트만 `'use client'`
-- 토큰을 `localStorage`·`sessionStorage`·일반 쿠키에 저장하지 않는다 (Access는 `lib/auth` 메모리, Refresh는 서버가 httpOnly 쿠키로 관리)
+- 토큰을 `localStorage`·`sessionStorage`·일반 쿠키에 저장하지 않는다 (Access는 `lib/api/client.ts` 메모리, Refresh는 서버가 httpOnly 쿠키로 관리)
 - REST 기본 주소는 상대 경로 `/api` (Next.js rewrites 프록시). 백엔드 주소를 코드에 하드코딩하지 않는다. 예외: 첨부 업로드는 `NEXT_PUBLIC_UPLOAD_BASE_URL`, WebSocket은 `NEXT_PUBLIC_WS_URL`
 - API 호출은 반드시 `lib/api/{domain}.ts` 함수 경유 (컴포넌트에서 `fetch` 직접 호출 금지) → 공통 `client.ts`(백성준)가 토큰 첨부·재발급·에러 변환 처리
 - 서버 데이터 조회 방식은 팀 전체 1가지로 통일 — **TanStack Query** (PRD Q19 확정)
@@ -166,6 +166,8 @@ indent_size = 2
 **규칙**
 - IDE Run 설정·워크스페이스 파일은 커밋하지 않는다.
 - IDE에서 실행이 되더라도 **push 전에 `./mvnw verify` 1회** (Eclipse는 자체 컴파일러를 써서 결과가 다를 수 있음, CI와 같은 명령).
+  - 터미널에서는 **`SPRING_PROFILES_ACTIVE=local ./mvnw verify`** 로 실행한다 (PowerShell: `$env:SPRING_PROFILES_ACTIVE='local'; ./mvnw verify`). 프로필이 없으면 `DB_URL` 등이 비어 테스트가 기동 실패한다 — CI도 같은 값을 넣는다(§4).
+  - `LLM_PROVIDER`는 넣지 않아도 된다(기본 `mock` → Spring AI 자동 설정 비활성).
 - Eclipse의 `bin/`, IntelliJ의 `out/`이 `git status`에 보이면 `.gitignore` 누락 → 백성준에게 CR.
 - Windows 사용자는 `git config --global core.autocrlf input` 권장 (`.gitattributes`와 함께 줄바꿈 통일).
 

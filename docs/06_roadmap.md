@@ -37,18 +37,18 @@ flowchart LR
 ## 백성준 (BSJ) — 인증/권한 · 문의 접수 · FAQ/템플릿 · 설문 · 이력 묶음 · 공용
 
 ### S0 (9/29 ~ 10/1)
-- [ ] GitHub 저장소 설정(01 §2.3): Collaborator 초대(`totot03`, `s-sujin-99`), `main`·`dev` 생성 + 기본 브랜치 `dev`, 브랜치 보호 규칙(관리자 우회 금지)
-- [ ] 3개 repo `.github/CODEOWNERS`, PR 템플릿, `.githooks/pre-push` 추가 — CODEOWNERS는 01 §4.4 그대로 복사
-- [ ] front: Next.js 프로젝트 생성, Tailwind, **shadcn/ui 초기화 + 08 §5.1 컴포넌트 일괄 설치**, `globals.css` 토큰(퍼플/인디고 임시값 + ai/success/warning/info), Pretendard
-- [ ] front: 공용 레이아웃(Header·Sidebar·Footer), `config/menu.ts`, `config/badge.ts`, `lib/format.ts`, `lib/api/client.ts`
-- [ ] front/back: ESLint·Prettier·tsconfig·.editorconfig 공용 설정, `.gitignore`(.shrimp, .mcp.json, .env)
-- [ ] back: IDE 혼용 대비 설정(10 §3.5) — `.gitignore`(IntelliJ·Eclipse 파일), `.gitattributes`(LF), `pom.xml` UTF-8, Maven Wrapper 포함 확인
-- [ ] IntelliJ 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
-- [ ] back: Spring Boot 4 / Java 21 / Maven 프로젝트, `global/*`(ApiResponse, ErrorCode, GlobalExceptionHandler, BaseTimeEntity), `docker-compose.yml`, Flyway 설정, `application.yml`(import 구조)
-- [ ] MEMBER, REFRESH_TOKEN 마이그레이션 + 엔티티, `MemberQueryPort`·`AttachmentPort`·`FaqQueryPort` 인터페이스 + 스텁
-- [ ] Security + JWT 로그인/회원가입/재발급 API(Refresh httpOnly 쿠키, SameSite=Lax·Path=/), 프론트 로그인 화면 + `AuthGuard`
-- [ ] `next.config.ts` rewrites(`/api/*` → `BACKEND_ORIGIN`), `server.forward-headers-strategy: framework`, CORS는 `/api/attachments`·`/ws`만 (02 §2.1)
-- [ ] 시드: 역할별 계정
+- [x] GitHub 저장소 설정(01 §2.3): Collaborator 초대(`totot03`, `s-sujin-99`), `main`·`dev` 생성 + 기본 브랜치 `dev`, 브랜치 보호 규칙(관리자 우회 금지)
+- [x] 3개 repo `.github/CODEOWNERS`, PR 템플릿, `.githooks/pre-push` 추가 — CODEOWNERS는 01 §4.4 그대로 복사
+- [x] front: Next.js 프로젝트 생성, Tailwind, **shadcn/ui 초기화 + 08 §5.1 컴포넌트 일괄 설치**, `globals.css` 토큰(퍼플/인디고 임시값 + ai/success/warning/info), Pretendard
+- [x] front: 공용 레이아웃(Header·Sidebar·Footer), `config/menu.ts`, `config/badge.ts`, `lib/format.ts`, `lib/api/client.ts`
+- [x] front/back: ESLint·Prettier·tsconfig·.editorconfig 공용 설정, `.gitignore`(.shrimp, .mcp.json, .env)
+- [x] back: IDE 혼용 대비 설정(10 §3.5) — `.gitignore`(IntelliJ·Eclipse 파일), `.gitattributes`(LF), `pom.xml` UTF-8, Maven Wrapper 포함 확인
+- [x] IntelliJ 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
+- [x] back: Spring Boot 4 / Java 21 / Maven 프로젝트, `global/*`(ApiResponse, ErrorCode, GlobalExceptionHandler, BaseTimeEntity), `docker-compose.yml`, Flyway 설정, `application.yml`(import 구조)
+- [x] MEMBER, REFRESH_TOKEN 마이그레이션 + 엔티티, `MemberQueryPort`·`AttachmentPort`·`FaqQueryPort` 인터페이스 + 스텁
+- [x] Security + JWT 로그인/회원가입/재발급 API(Refresh httpOnly 쿠키, SameSite=Lax·Path=/), 프론트 로그인 화면 + `AuthGuard`
+- [x] `next.config.ts` rewrites(`/api/*` → `BACKEND_ORIGIN`), `server.forward-headers-strategy: framework`, CORS는 `/api/attachments`·`/ws`만 (02 §2.1)
+- [x] 시드: 역할별 계정
 
 ### S1 (10/2 ~ 10/8)
 > S0에서 옮겨 온 항목(①~②)은 **10/2~10/3에 먼저** 끝낸다. 그 전까지 다른 사람은 `components/ui`(shadcn)를 직접 사용하고, 공용 조합 컴포넌트가 머지되면 교체한다.
@@ -85,11 +85,11 @@ flowchart LR
 ## 박민재 (PMJ) — 티켓·상태 전이 · 배정 · SLA · 알림(WebSocket) · 채팅
 
 ### S0 (9/29 ~ 10/1)
-- [ ] Eclipse/STS 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
-- [ ] SLA_POLICY, TICKET, TICKET_HISTORY, TICKET_REPLY 마이그레이션 + 엔티티
-- [ ] `TicketClassificationPort`, `TicketQueryPort`, `NotificationPort` 인터페이스 + 스텁, 이벤트 클래스 5종 정의
-- [ ] `TicketStateMachine` 전이표 + 단위 테스트
-- [ ] `TicketGuestPort` 인터페이스 + 스텁
+- [x] Eclipse/STS 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
+- [x] SLA_POLICY, TICKET, TICKET_HISTORY, TICKET_REPLY 마이그레이션 + 엔티티
+- [x] `TicketClassificationPort`, `TicketQueryPort`, `NotificationPort` 인터페이스 + 스텁, 이벤트 클래스 4종 정의(`SurveySubmittedEvent` 는 BSJ 발행·소유, 02 §5.1)
+- [x] `TicketStateMachine` 전이표 + 단위 테스트
+- [x] `TicketGuestPort` 인터페이스 + 스텁
 
 ### S1 (10/2 ~ 10/8)
 - [ ] `POST /api/tickets`(회원/비회원, 티켓번호 생성, SLA due 계산, `TicketCreatedEvent`)
@@ -123,13 +123,13 @@ flowchart LR
 ## 신수진 (SSJ) — AI 분류·초안 · 대시보드 · 리포트 · AWS 인프라/배포
 
 ### S0 (9/29 ~ 10/1)
-- [ ] Eclipse/STS 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
-- [ ] front·back **GitHub Actions CI** 워크플로(10 §4) 추가 → 첫 실행 성공 시 백성준에게 Required status check 등록 요청
-- [ ] `FileStorage`(LocalFileStorage), `MailSender`(LogMailSender), `LlmClient`(MockLlmClient) 인터페이스 + 로컬 구현
-- [ ] TICKET_AI_RESULT, AI_DRAFT, MAIL_LOG 마이그레이션 + 엔티티, `AiResultPort` 스텁
-- [ ] Spring AI 2.0.1 의존성 추가 요청(CR → 백성준, `spring-ai-bom`), LLM 제공자 후보 비교·선택(PRD Q11) → 팀 공유 후 개발용 키 발급
-- [ ] AWS 계정/IAM 준비, **SES 샌드박스 해제 요청 또는 테스트 수신자 검증 시작**
-- [ ] CloudFront(PRD Q20 ③) 구성 사전 테스트 — 임시 EC2 + CloudFront로 HTTPS API·WSS 연결 확인 (배포 주에 막히지 않도록)
+- [x] Eclipse/STS 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
+- [x] front·back **GitHub Actions CI** 워크플로(10 §4) 추가 → 첫 실행 성공 시 백성준에게 Required status check 등록 요청
+- [x] `FileStorage`(LocalFileStorage), `MailSender`(LogMailSender), `LlmClient`(MockLlmClient) 인터페이스 + 로컬 구현
+- [x] TICKET_AI_RESULT, AI_DRAFT, MAIL_LOG 마이그레이션 + 엔티티, `AiResultPort` 스텁
+- [x] Spring AI 2.0.1 의존성 추가 요청(CR → 백성준, `spring-ai-bom`), LLM 제공자 후보 비교·선택(PRD Q11) → 팀 공유 후 개발용 키 발급 — **Gemini** 선택, 개발용 키 발급 완료
+- [x] AWS 계정/IAM 준비, **SES 샌드박스 해제 요청 또는 테스트 수신자 검증 시작** — SES 도메인 `helpnest.kro.kr` 인증, 프로덕션 액세스 요청(심사 중)
+- [x] CloudFront(PRD Q20 ③) 구성 사전 테스트 — 임시 EC2 + CloudFront로 HTTPS API·WSS 연결 확인 (배포 주에 막히지 않도록) — HTTPS 200·WSS 101 확인, 임시 자원 삭제
 
 ### S1 (10/2 ~ 10/8)
 - [ ] `SpringAiLlmClient` + 마스킹 + 타임아웃/재시도

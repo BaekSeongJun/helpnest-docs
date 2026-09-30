@@ -401,9 +401,12 @@ WHERE status = 'RESOLVED' AND resolved_at < NOW() - INTERVAL '72 hours';
 ```
 
 ## 5. 시드 데이터 (각자 소유 파일)
+- 위치: `src/main/resources/db/seed/` — **local 프로필에서만** Flyway가 읽는다(`application-local.yml`의 `flyway.locations`). 운영에는 들어가지 않고, CI는 local 프로필로 돌아 시드까지 적용된다.
+- 이름: Flyway **반복 마이그레이션** `R__seed_{이니셜}_{내용}.sql` (내용이 바뀌면 다시 실행) → `INSERT ... ON CONFLICT DO NOTHING` 처럼 여러 번 실행해도 안전하게 쓴다.
+
 | 파일 | 소유 | 내용 |
 |---|---|---|
-| `seed_BSJ_member.sql` | 백성준 | ADMIN 1, LEAD 1, AGENT 3, CUSTOMER 3 (비밀번호 공통 `Test1234!`) |
-| `seed_BSJ_faq_template.sql` | 백성준 | 유형별 FAQ 3개, 템플릿 2개 |
-| `seed_PMJ_ticket.sql` | 박민재 | 상태별 티켓 각 3개, SLA 초과 샘플 포함 |
-| `seed_SSJ_ai.sql` | 신수진 | 분류 결과/초안 샘플, 대시보드용 과거 30일 데이터 |
+| `R__seed_BSJ_member.sql` | 백성준 | ADMIN 1, LEAD 1, AGENT 3, CUSTOMER 3 — `admin@helpnest.local`, `lead@…`, `agent1~3@…`, `customer1~3@…` (비밀번호 공통 `Test1234!`) ✅ |
+| `R__seed_BSJ_faq_template.sql` | 백성준 | 유형별 FAQ 3개, 템플릿 2개 |
+| `R__seed_PMJ_ticket.sql` | 박민재 | 상태별 티켓 각 3개, SLA 초과 샘플 포함 |
+| `R__seed_SSJ_ai.sql` | 신수진 | 분류 결과/초안 샘플, 대시보드용 과거 30일 데이터 |
