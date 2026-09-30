@@ -85,11 +85,11 @@ flowchart LR
 ## 박민재 (PMJ) — 티켓·상태 전이 · 배정 · SLA · 알림(WebSocket) · 채팅
 
 ### S0 (9/29 ~ 10/1)
-- [ ] Eclipse/STS 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
-- [ ] SLA_POLICY, TICKET, TICKET_HISTORY, TICKET_REPLY 마이그레이션 + 엔티티
-- [ ] `TicketClassificationPort`, `TicketQueryPort`, `NotificationPort` 인터페이스 + 스텁, 이벤트 클래스 5종 정의
-- [ ] `TicketStateMachine` 전이표 + 단위 테스트
-- [ ] `TicketGuestPort` 인터페이스 + 스텁
+- [x] Eclipse/STS 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
+- [x] SLA_POLICY, TICKET, TICKET_HISTORY, TICKET_REPLY 마이그레이션 + 엔티티
+- [x] `TicketClassificationPort`, `TicketQueryPort`, `NotificationPort` 인터페이스 + 스텁, 이벤트 클래스 4종 정의(`SurveySubmittedEvent` 는 BSJ 발행·소유, 02 §5.1)
+- [x] `TicketStateMachine` 전이표 + 단위 테스트
+- [x] `TicketGuestPort` 인터페이스 + 스텁
 
 ### S1 (10/2 ~ 10/8)
 - [ ] `POST /api/tickets`(회원/비회원, 티켓번호 생성, SLA due 계산, `TicketCreatedEvent`)
