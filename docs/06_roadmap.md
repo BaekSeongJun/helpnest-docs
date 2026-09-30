@@ -124,8 +124,8 @@ flowchart LR
 
 ### S0 (9/29 ~ 10/1)
 - [ ] Eclipse/STS 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
-- [ ] front·back **GitHub Actions CI** 워크플로(10 §4) 추가 → 첫 실행 성공 시 백성준에게 Required status check 등록 요청
-- [ ] `FileStorage`(LocalFileStorage), `MailSender`(LogMailSender), `LlmClient`(MockLlmClient) 인터페이스 + 로컬 구현
+- [x] front·back **GitHub Actions CI** 워크플로(10 §4) 추가 → 첫 실행 성공 시 백성준에게 Required status check 등록 요청
+- [x] `FileStorage`(LocalFileStorage), `MailSender`(LogMailSender), `LlmClient`(MockLlmClient) 인터페이스 + 로컬 구현
 - [ ] TICKET_AI_RESULT, AI_DRAFT, MAIL_LOG 마이그레이션 + 엔티티, `AiResultPort` 스텁
 - [ ] Spring AI 2.0.1 의존성 추가 요청(CR → 백성준, `spring-ai-bom`), LLM 제공자 후보 비교·선택(PRD Q11) → 팀 공유 후 개발용 키 발급
 - [ ] AWS 계정/IAM 준비, **SES 샌드박스 해제 요청 또는 테스트 수신자 검증 시작**
