@@ -125,7 +125,7 @@ CS는 고객과 기업 사이의 가장 작은 단위(마이크로)의 소통이
 | FR-AUTH-01 | 이메일/비밀번호 회원가입(CUSTOMER), 로그인 시 JWT Access(30분) + Refresh(14일) 발급. **Access는 응답 본문 → 프론트 메모리에만 보관**, **Refresh는 `httpOnly`·`Secure`·`SameSite=Lax` 쿠키**(`Path=/`)로만 전달 — JS에서 읽을 수 없음. 새로고침 시 `/api/auth/refresh`로 Access 복구 | P0 |
 | FR-AUTH-02 | Refresh 토큰으로 재발급, 로그아웃 시 Refresh 토큰 폐기 | P0 |
 | FR-AUTH-03 | ADMIN이 AGENT/LEAD 계정 생성, 역할 변경, 비활성화 | P0 |
-| FR-AUTH-04 | 역할 기반 접근 제어(Spring Security + 프론트 라우트 가드). 프론트는 클라이언트 `AuthGuard`가 기본(새로고침 시 refresh 성공 여부로 판단). Next.js `middleware.ts`는 Refresh 쿠키 유무로 1차 확인(REST가 Next.js 프록시를 거쳐 쿠키가 프론트 도메인 쿠키가 되므로 가능) |  P0 |
+| FR-AUTH-04 | 역할 기반 접근 제어(Spring Security + 프론트 라우트 가드). 프론트는 클라이언트 `AuthGuard`가 기본(새로고침 시 refresh 성공 여부로 판단). Next.js `proxy.ts`(Next 16 의 middleware)는 Refresh 쿠키 유무로 1차 확인(REST가 Next.js 프록시를 거쳐 쿠키가 프론트 도메인 쿠키가 되므로 가능) |  P0 |
 | FR-AUTH-05 | 상담원 상담 가능 상태(`available`) ON/OFF — 자동 배정 대상 여부 | P0 |
 | FR-AUTH-06 | 비회원 티켓 조회: 티켓번호 + 이메일 + 조회 비밀번호 → 해당 티켓 전용 Guest 토큰(30분) 발급, Access와 같이 **메모리 보관**(새로고침 시 다시 조회) | P0 |
 | FR-AUTH-07 | 비밀번호 찾기: 이메일 입력 → 재설정 링크 메일(유효 30분, 1회용) → 새 비밀번호 설정. 가입 여부와 무관하게 동일 응답(계정 존재 노출 방지) | P0 |
