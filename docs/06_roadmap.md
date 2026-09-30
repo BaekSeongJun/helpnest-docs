@@ -43,7 +43,7 @@ flowchart LR
 - [x] front: 공용 레이아웃(Header·Sidebar·Footer), `config/menu.ts`, `config/badge.ts`, `lib/format.ts`, `lib/api/client.ts`
 - [x] front/back: ESLint·Prettier·tsconfig·.editorconfig 공용 설정, `.gitignore`(.shrimp, .mcp.json, .env)
 - [x] back: IDE 혼용 대비 설정(10 §3.5) — `.gitignore`(IntelliJ·Eclipse 파일), `.gitattributes`(LF), `pom.xml` UTF-8, Maven Wrapper 포함 확인
-- [ ] IntelliJ 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
+- [x] IntelliJ 설정(JDK 21·UTF-8·Lombok·import, 10 §3.5) 후 `./mvnw verify` 성공 확인
 - [x] back: Spring Boot 4 / Java 21 / Maven 프로젝트, `global/*`(ApiResponse, ErrorCode, GlobalExceptionHandler, BaseTimeEntity), `docker-compose.yml`, Flyway 설정, `application.yml`(import 구조)
 - [x] MEMBER, REFRESH_TOKEN 마이그레이션 + 엔티티, `MemberQueryPort`·`AttachmentPort`·`FaqQueryPort` 인터페이스 + 스텁
 - [x] Security + JWT 로그인/회원가입/재발급 API(Refresh httpOnly 쿠키, SameSite=Lax·Path=/), 프론트 로그인 화면 + `AuthGuard`
