@@ -45,6 +45,7 @@
 | PATCH | `/api/members/me` | 로그인 | `{name, phone}` 내 정보 수정 |
 | PATCH | `/api/members/me/password` | 로그인 | `{currentPassword, newPassword}` → Refresh 토큰 전체 폐기 |
 | PATCH | `/api/members/me/availability` | AGENT | `{available: true}` → 내 정보. 역할이 AGENT 가 아니면(LEAD·ADMIN 포함) `403 MEMBER_NOT_AGENT` |
+| GET | `/api/console/agents` | AGENT+ | 배정 드롭다운용 활성 상담원(상담 불가 포함) 이름순 → `[{memberId, name, available, activeCount}]`. `activeCount` 는 ASSIGNED·IN_PROGRESS 티켓 수(자동 배정과 같은 기준). 이메일·연락처는 주지 않는다 (CR #44) |
 | GET | `/api/admin/members` | ADMIN | 목록 `?role=&status=&page=&size=` (기본 가입일 최신순 20개) → 페이지 `{memberId, email, name, phone, role, status, available, createdAt}` |
 | POST | `/api/admin/members` | ADMIN | `{email, password, name, phone?, role: AGENT\|LEAD}` → `201`. 검증은 회원가입과 동일 |
 | PATCH | `/api/admin/members/{id}` | ADMIN | `{role?, status?}` (null 은 유지) |
