@@ -161,7 +161,7 @@ com.helpnest
 ├─ HelpNestApplication.java                 (백성준)
 ├─ global/                                  (백성준) ★ 공용
 │  ├─ config/  SecurityConfig, CorsConfig, JpaAuditingConfig, AsyncConfig, SchedulingConfig
-│  ├─ security/ JwtProperties, JwtProvider, GuestTicketToken, RateLimitFilter (JWT 검증은 OAuth2 Resource Server 가 처리 — 별도 JwtAuthFilter·UserDetails 없음, 컨트롤러는 `@AuthenticationPrincipal Jwt` → `JwtProvider.memberId(jwt)`)
+│  ├─ security/ JwtProperties, JwtProvider(Access·Guest 토큰 발급, `guestTicketId(jwt)` 로 Guest 판정), RateLimitFilter (JWT 검증은 OAuth2 Resource Server 가 처리 — 별도 JwtAuthFilter·UserDetails 없음, 컨트롤러는 `@AuthenticationPrincipal Jwt` → `JwtProvider.memberId(jwt)`)
 │  ├─ common/  ApiResponse<T>, PageResponse<T>, BaseTimeEntity
 │  ├─ error/   ErrorCode(interface), CommonErrorCode, BusinessException, GlobalExceptionHandler
 │  └─ websocket/ WebSocketConfig, StompAuthInterceptor      (박민재) ← global 안이지만 박민재 소유
