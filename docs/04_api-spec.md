@@ -94,9 +94,9 @@
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
 | POST | `/api/tickets` | 공개(비회원 포함) | 문의 접수 |
-| GET | `/api/tickets/my` | CUSTOMER | 내 문의 목록 |
-| GET | `/api/tickets/{id}` | 고객 본인/Guest 토큰/AGENT+ | 상세(고객에겐 내부 메모 제외) |
-| POST | `/api/tickets/{id}/replies` | 고객 본인/Guest | 추가 답글 (RESOLVED면 재문의 → IN_PROGRESS) |
+| GET | `/api/tickets/my` | CUSTOMER | 내 문의 목록 `?page=&size=` (기본 접수일 최신순 20개) → 페이지 `{ticketId, ticketNo, title, customerId, customerName, category, priority, sentiment, status, agentId, agentName, firstResponseDueAt, firstRespondedAt, slaWarned, slaBreached, createdAt}`. Guest 토큰은 403 (토큰이 티켓 1건에만 유효해 목록이 성립하지 않음) |
+| GET | `/api/tickets/{id}` | 고객 본인 / Guest 토큰(발급 대상 1건) | 상세 — 답변 목록에서 **내부 메모를 조회 쿼리 단계에서 제외**한다. 남의 티켓·없는 티켓·Guest 토큰의 ticketId 불일치는 **모두 404** `TICKET_NOT_FOUND` (403 을 주면 티켓 존재 여부가 드러난다). AGENT+ 는 이 경로가 아니라 `GET /api/console/tickets/{id}` 를 쓴다 — 상담원은 내부 메모와 이력이 함께 필요하다 |
+| POST | `/api/tickets/{id}/replies` | 고객 본인 / Guest 토큰 | `{content, attachmentIds?}` → 201 + ReplyResponse. RESOLVED 면 재문의로 IN_PROGRESS 전이 + STATUS_CHANGE 이력(메모 `고객 재문의`). CLOSED 면 409 `TICKET_ALREADY_CLOSED` (종료 티켓은 담당자가 손을 뗀 상태라 답글만 쌓인다 → 새 문의로 받는다). `isInternal` 을 받지 않는다 — 고객은 내부 메모를 만들 수 없다 |
 | GET | `/api/console/tickets` | AGENT(본인), LEAD+ | `?status=&priority=&category=&agentId=&sla=WARNING\|BREACHED&keyword=` |
 | GET | `/api/console/tickets/{id}` | AGENT+ | 상세 + 이력 |
 | PATCH | `/api/console/tickets/{id}/status` | 담당 AGENT, LEAD+ | `{toStatus, memo}` — 전이표(PRD 5장) 위반 시 409 `TICKET_INVALID_TRANSITION`, 담당자가 아닌 AGENT 는 403 `TICKET_NOT_ASSIGNEE`. 담당자 변경(`toStatus=ASSIGNED`)은 이 API 가 아니라 배정 API 를 쓴다 |
