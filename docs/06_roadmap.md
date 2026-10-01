@@ -136,7 +136,7 @@ flowchart LR
 - [x] `SpringAiLlmClient` + 마스킹 + 타임아웃/재시도 (back #20)
 - [x] AI-1 분류 리스너(비동기) → `applyClassification` / 실패 fallback (back #23)
 - [x] 분류 조회/재분류 API + `AiAnalysisPanel` 컴포넌트 (back #24, front #7)
-- [ ] 분류 테스트 샘플 30건 + 정확도 측정
+- [x] 분류 테스트 샘플 30건 + 정확도 측정 (back #33, 결과 05 §6.1)
 
 ### S2 (10/9 ~ 10/14)
 - [ ] AI-2 답변 초안(FAQ·과거 답변 검색 + 프롬프트) API + `AiDraftButton`
