@@ -44,10 +44,13 @@
 | GET | `/api/members/me` | 로그인 | 내 정보 |
 | PATCH | `/api/members/me` | 로그인 | `{name, phone}` 내 정보 수정 |
 | PATCH | `/api/members/me/password` | 로그인 | `{currentPassword, newPassword}` → Refresh 토큰 전체 폐기 |
-| PATCH | `/api/members/me/availability` | AGENT | `{available: true}` |
-| GET | `/api/admin/members` | ADMIN | 목록 (`?role=AGENT`) |
-| POST | `/api/admin/members` | ADMIN | 상담원/팀장 계정 생성 |
-| PATCH | `/api/admin/members/{id}` | ADMIN | 역할/상태 변경 |
+| PATCH | `/api/members/me/availability` | AGENT | `{available: true}` → 내 정보. 역할이 AGENT 가 아니면(LEAD·ADMIN 포함) `403 MEMBER_NOT_AGENT` |
+| GET | `/api/admin/members` | ADMIN | 목록 `?role=&status=&page=&size=` (기본 가입일 최신순 20개) → 페이지 `{memberId, email, name, phone, role, status, available, createdAt}` |
+| POST | `/api/admin/members` | ADMIN | `{email, password, name, phone?, role: AGENT\|LEAD}` → `201`. 검증은 회원가입과 동일 |
+| PATCH | `/api/admin/members/{id}` | ADMIN | `{role?, status?}` (null 은 유지) |
+
+> - 계정 관리 제약: 본인 역할 변경·비활성화 금지(`MEMBER_SELF_CHANGE_FORBIDDEN`), 고객 ↔ 직원(AGENT·LEAD·ADMIN) 역할 전환 금지(`MEMBER_ROLE_NOT_ALLOWED`). AGENT 가 아닌 역할이 되면 `available=false`.
+> - 역할·상태가 바뀌면 그 회원의 Refresh 토큰을 전부 폐기한다 → 다음 재발급부터 새 권한/차단 적용. 이미 발급된 Access 토큰은 만료(30분)까지 유효.
 
 ## 3. 첨부 (백성준)
 | Method | URL | 권한 | 설명 |
