@@ -64,8 +64,8 @@ flowchart TB
 ### 2.3 콘솔 (상담원·팀장)
 | ID | 화면 | 경로 | 권한 | 담당 | 주요 구성 | 사용 API |
 |---|---|---|---|---|---|---|
-| CS-01 | 티켓함 | `/console/tickets` | AGENT+ | 박민재 | 탭(내 티켓/미배정/전체*), 필터(상태·우선순위·유형·담당자·SLA), 검색, 표(번호, 제목, 고객, 유형, 우선순위, 불만, 상태, SLA, 담당, 접수일), 실시간 "새 티켓" 배너 (상담 가능 ON/OFF 토글은 Header에 있음 — 백성준) | `GET /console/tickets`, STOMP `/topic/console/tickets` |
-| CS-02 | 티켓 상세 | `/console/tickets/[id]` | AGENT+ | 박민재 | 좌: 본문·첨부, 타임라인(공개/내부 메모 구분), `ReplyEditor`(일반 텍스트, [템플릿] [AI 초안] [내부 메모] 토글, 첨부) / 우: 상태 변경·배정(LEAD), SLA, `AiAnalysisPanel`(신수진), `CustomerHistoryPanel`(백성준), 상태 이력 | `GET /console/tickets/{id}`, `/status`, `/assign`, `/replies`, `/classification`, AI API |
+| CS-01 | 티켓함 | `/console/tickets` | AGENT+ | 박민재 | 탭(내 티켓/미배정/전체*), 필터(상태·우선순위·유형·SLA), 키워드 검색(번호·제목·본문, 300ms 디바운스), 표(번호, 제목, 고객, 유형, 우선순위, 불만, 상태, SLA, 담당, 접수일), 20행 서버 페이지네이션. **탭·필터·페이지는 URL 쿼리에 보존**한다(상세에서 뒤로가기 복원·링크 공유). 담당자는 별도 필터가 아니라 탭이 번역한다(내 티켓 → `agentId`, 미배정 → `unassigned=true`). 실시간 "새 티켓" 배너는 S2 (상담 가능 ON/OFF 토글은 Header에 있음 — 백성준) | `GET /console/tickets`, STOMP `/topic/console/tickets`(S2) |
+| CS-02 | 티켓 상세 | `/console/tickets/[id]` | AGENT+ | 박민재 | 좌: 본문·첨부, `TicketTimeline`(`showInternal`), `ReplyEditor`(일반 텍스트 5,000자, [내부 메모] 토글, `toolbarSlot` 에 [템플릿] [AI 초안] 주입 — S2) / 우: SLA, 상태 변경, 배정(LEAD+), 상태 이력, `AiAnalysisPanel`(신수진, S2), `CustomerHistoryPanel`(백성준, S2). **전이 가능 여부는 프론트가 판정하지 않고** 서버의 `TICKET_INVALID_TRANSITION` 문구를 토스트로 보여 준다. 1024px 미만은 1단 | `GET /console/tickets/{id}`, `/histories`, `/status`, `/assign`, `/assign/auto`, `/replies`, `GET /console/agents`(배정 드롭다운) |
 | CS-03 | 채팅 상담 | `/console/chat` | AGENT | 박민재 | 좌: 내 채팅방 목록(대기/상담중) / 우: 대화창, 고객 정보, [템플릿] [종료·해결] | `GET /chat/rooms`, STOMP |
 | CS-04 | 대시보드 | `/console/dashboard` | AGENT(본인), LEAD+ | 신수진 | 기간 필터, KPI 카드(전체·미배정·SLA 위반율·평균 첫 응답·평균 만족도), 상태/유형 분포 차트, 상담원별 표 + [CSV] | `GET /dashboard/*`, `/agents/export` |
 | CS-05 | 월간 리포트 | `/console/reports` | LEAD+ | 신수진 | 월 선택, 유형별 건수(전월 대비), 처리시간, SLA, 만족도, 불만 비율 차트·표 + [CSV 다운로드] | `GET /reports/monthly`, `/export` |

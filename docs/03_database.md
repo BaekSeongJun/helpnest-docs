@@ -89,6 +89,7 @@ CREATE TABLE refresh_token (
   token_hash  VARCHAR(200) NOT NULL UNIQUE,
   expires_at  TIMESTAMPTZ NOT NULL,
   revoked     BOOLEAN NOT NULL DEFAULT FALSE,
+  rotated_at  TIMESTAMPTZ,                       -- 회전(재발급)으로 폐기된 시각. 30초 안 재사용은 응답 유실·동시 탭으로 보고 재발급. 로그아웃·일괄 폐기는 NULL
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
@@ -107,7 +108,7 @@ CREATE TABLE password_reset_token (
 ```sql
 -- @owner BSJ  (TICKET 생성 이후)
 CREATE TABLE attachment (
-  attachment_id  BIGSERIAL PRIMARY KEY,
+  attachment_id  BIGINT PRIMARY KEY,                         -- 앱이 만드는 추측 불가 난수 [2^52, 2^53) (비회원 첨부 가로채기 방지)
   ticket_id      BIGINT REFERENCES ticket(ticket_id),        -- 업로드 직후엔 NULL, 티켓 생성 시 연결
   reply_id       BIGINT REFERENCES ticket_reply(reply_id),
   original_name  VARCHAR(255) NOT NULL,
@@ -117,6 +118,7 @@ CREATE TABLE attachment (
   uploaded_by    BIGINT REFERENCES member(member_id),        -- 비회원 NULL
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+CREATE INDEX idx_attachment_orphan ON attachment(created_at) WHERE ticket_id IS NULL;   -- 고아 첨부 정리
 
 CREATE TABLE faq (
   faq_id        BIGSERIAL PRIMARY KEY,
@@ -407,6 +409,6 @@ WHERE status = 'RESOLVED' AND resolved_at < NOW() - INTERVAL '72 hours';
 | 파일 | 소유 | 내용 |
 |---|---|---|
 | `R__seed_BSJ_member.sql` | 백성준 | ADMIN 1, LEAD 1, AGENT 3, CUSTOMER 3 — `admin@helpnest.local`, `lead@…`, `agent1~3@…`, `customer1~3@…` (비밀번호 공통 `Test1234!`) ✅ |
-| `R__seed_BSJ_faq_template.sql` | 백성준 | 유형별 FAQ 3개, 템플릿 2개 |
+| `R__seed_BSJ_support_faq_template.sql` | 백성준 | 유형별 FAQ 3개 ✅, 템플릿 2개(S2) — `member` 시드보다 **뒤에** 실행돼야 해서 이 이름 (Repeatable 은 설명 알파벳 순 실행, `created_by` 가 admin 참조) |
 | `R__seed_PMJ_ticket.sql` | 박민재 | 상태별 티켓 각 3개, SLA 초과 샘플 포함 |
 | `R__seed_SSJ_ai.sql` | 신수진 | 분류 결과/초안 샘플, 대시보드용 과거 30일 데이터 |
