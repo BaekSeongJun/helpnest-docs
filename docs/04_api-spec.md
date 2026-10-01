@@ -36,7 +36,7 @@
 | POST | `/api/auth/login` | 공개 | → 본문 `{accessToken, member}` + `Set-Cookie: refreshToken`(httpOnly, Secure, SameSite=Lax, Path=/) |
 | POST | `/api/auth/refresh` | 공개(쿠키) | 쿠키의 Refresh로 Access 재발급 + Refresh 회전(새 쿠키) → `{accessToken, member}` |
 | POST | `/api/auth/logout` | 로그인 | Refresh 폐기 + 쿠키 삭제 |
-| POST | `/api/auth/guest` | 공개 | `{ticketNo, email, password}` → Guest 토큰 |
+| POST | `/api/auth/guest` | 공개 | `{ticketNo, email, password}` → `{guestToken, ticketId, expiresIn}`(초, 30분). 쿠키 없음 — 프론트 메모리에 두고 `Authorization: Bearer`. 토큰: `sub=guest:{ticketId}`, `role=GUEST`, `ticketId` 클레임. 티켓 없음·이메일 불일치·회원 티켓·비밀번호 오류는 모두 같은 `401 AUTH_GUEST_INVALID`(열거 방지, 실패 경로도 BCrypt 1회). 이메일 대소문자 무시. Guest 토큰으로 회원 API 호출 시 403 |
 | POST | `/api/auth/password/reset-request` | 공개 | `{email}` → 항상 200 (계정 존재 여부 비노출), 재설정 메일 |
 | POST | `/api/auth/password/reset` | 공개 | `{token, newPassword}` |
 | POST | `/api/auth/guest/reset-request` | 공개 | `{ticketNo, email}` → 항상 200, 조회 비밀번호 재설정 메일 |
