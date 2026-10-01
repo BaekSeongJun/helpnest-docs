@@ -97,7 +97,15 @@
 | POST | `/api/console/tickets/{id}/replies` | 담당 AGENT, LEAD+ | `{content, isInternal, aiDraftId?, attachmentIds?}` |
 | GET | `/api/console/tickets/{id}/histories` | AGENT+ | 상태 이력 |
 
-> 요청 제한: `POST /api/tickets`, `POST /api/attachments`(비회원), `/api/auth/login`, **`/api/auth/guest`(비회원 조회 — 조회 비밀번호 대입 방지)**, `/api/auth/*/reset-request`는 공용 `RateLimitFilter`(백성준) 적용 → 초과 시 `429`.
+> 요청 제한: 공용 `RateLimitFilter`(백성준, IP 기준) → 초과 시 `429 COMMON_TOO_MANY_REQUESTS` + `Retry-After`(초).
+>
+> | 요청 | 한도 |
+> |---|---|
+> | `POST /api/tickets`, `POST /api/attachments` | **비회원만**(Authorization 헤더 없음) 10분 5건 |
+> | `POST /api/auth/login`, `POST /api/auth/guest`(조회 비밀번호 대입 방지) | 10분 10건 |
+> | `POST /api/auth/password/reset-request`, `/api/auth/guest/reset-request` | 10분 5건 |
+>
+> 본문 값 기준 제한(비회원 **동일 이메일 1시간 5건**)은 서비스에서 `RateLimiter.tryAcquire("ticket-email:" + email, 5, Duration.ofHours(1))` 호출(박민재 `TicketService`). 테스트에서는 `app.rate-limit.enabled=false`(back `src/test/resources/config/application.yml`).
 > 본문(`content`)은 일반 텍스트, 최대 5,000자. 서버는 원문 저장, 프론트는 이스케이프 출력.
 
 **POST /api/tickets 요청 예**
