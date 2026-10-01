@@ -71,8 +71,9 @@
 | GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천(상위 3) — S2 |
 | GET | `/api/admin/faqs` | LEAD, ADMIN | 관리 표용 목록 — 비공개 포함, 기본 최신순. 쿼리는 `/api/faqs` 와 같음 |
 | POST/PUT/DELETE | `/api/admin/faqs[/{id}]` | LEAD, ADMIN | `{category, question(≤300), answer(≤5,000), published?}` (published 생략 시 공개). POST `201`, DELETE 는 실제 삭제 |
-| GET | `/api/templates` | AGENT+ | `?category=&keyword=` |
-| POST/PUT/DELETE | `/api/admin/templates[/{id}]` | LEAD, ADMIN | CRUD |
+| GET | `/api/templates` | AGENT+ | `?category=&keyword=&page=&size=` → 페이지 `{templateId, category, title, content, active, createdAt, updatedAt}`. **사용 중(active)만**, 기본 제목순 50개. keyword 는 제목·본문 부분 일치(대소문자 무시). `TemplatePicker` 용 |
+| GET | `/api/admin/templates` | LEAD, ADMIN | 관리 표용 목록 — 미사용 포함, 기본 최신순. 쿼리는 `/api/templates` 와 같음 |
+| POST/PUT/DELETE | `/api/admin/templates[/{id}]` | LEAD, ADMIN | `{category, title(≤100), content(≤5,000), active?}` (active 생략 시 사용). POST `201`, DELETE 는 실제 삭제. 본문의 `{고객명}`·`{티켓번호}` 는 서버가 치환하지 않고 `TemplatePicker` 가 삽입할 때 치환 |
 
 ## 5. 만족도 설문 (백성준)
 | Method | URL | 권한 | 설명 |

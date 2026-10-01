@@ -64,7 +64,7 @@ flowchart LR
 - [x] FAQ 고객 페이지 + 관리 CRUD
 
 ### S2 (10/9 ~ 10/14)
-- [ ] 템플릿 CRUD + `TemplatePicker` 컴포넌트 (박민재에 전달)
+- [x] 템플릿 CRUD + `TemplatePicker` 컴포넌트 (박민재에 전달)
 - [ ] `SurveyListener`(RESOLVED) → 설문 생성 → 신수진 `MailSender` 호출, 재문의 시 설문 만료·재해결 시 재발급(FR-SRV-06)
 - [ ] 설문 페이지 + 제출 → `SurveySubmittedEvent`
 - [ ] 접수 폼 FAQ 추천
