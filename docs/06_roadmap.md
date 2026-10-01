@@ -93,12 +93,13 @@ flowchart LR
 - [x] `TicketGuestPort` 인터페이스 + 스텁
 
 ### S1 (10/2 ~ 10/8)
-- [ ] `POST /api/tickets`(회원/비회원, 티켓번호 생성, SLA due 계산, `TicketCreatedEvent`)
+- [x] `POST /api/tickets`(회원/비회원, 티켓번호 생성, SLA due 계산, `TicketCreatedEvent`)
 - [x] 고객용 조회/추가 답글 API, `TicketTimeline` 컴포넌트 (백성준에 전달)
 - [x] 상담 콘솔 티켓 목록(필터·SLA 임박순) / 상세 페이지
-- [ ] 상태 변경 API(서비스 계층 검증) + TICKET_HISTORY 기록
+- [x] 상태 변경 API(서비스 계층 검증) + TICKET_HISTORY 기록
 - [x] 상담원 답변/내부 메모 API + `ReplyEditor`(일반 텍스트, 5,000자, 템플릿·AI 초안 삽입 슬롯)
-- [ ] `applyClassification` 구현 + **최소 부하 자동 배정**(비관적 락) + 수동/재배정
+- [x] `applyClassification` 구현 + **최소 부하 자동 배정**(비관적 락) + 수동/재배정
+  > 수동 배정은 API·테스트 완료. 다만 콘솔(CS-02)에서 **LEAD 가 쓸 수 없다** — 상담원 목록 `GET /api/admin/members` 가 ADMIN 전용이라 403. back #44 [CR][PMJ→BSJ] 로 요청함. 현재는 자동 배정만 노출하는 열화 처리.
 
 ### S2 (10/9 ~ 10/14)
 - [ ] WebSocket/STOMP 설정 + JWT 인터셉터, `stompClient.ts`
