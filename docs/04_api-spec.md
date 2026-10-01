@@ -44,10 +44,13 @@
 | GET | `/api/members/me` | 로그인 | 내 정보 |
 | PATCH | `/api/members/me` | 로그인 | `{name, phone}` 내 정보 수정 |
 | PATCH | `/api/members/me/password` | 로그인 | `{currentPassword, newPassword}` → Refresh 토큰 전체 폐기 |
-| PATCH | `/api/members/me/availability` | AGENT | `{available: true}` |
-| GET | `/api/admin/members` | ADMIN | 목록 (`?role=AGENT`) |
-| POST | `/api/admin/members` | ADMIN | 상담원/팀장 계정 생성 |
-| PATCH | `/api/admin/members/{id}` | ADMIN | 역할/상태 변경 |
+| PATCH | `/api/members/me/availability` | AGENT | `{available: true}` → 내 정보. 역할이 AGENT 가 아니면(LEAD·ADMIN 포함) `403 MEMBER_NOT_AGENT` |
+| GET | `/api/admin/members` | ADMIN | 목록 `?role=&status=&page=&size=` (기본 가입일 최신순 20개) → 페이지 `{memberId, email, name, phone, role, status, available, createdAt}` |
+| POST | `/api/admin/members` | ADMIN | `{email, password, name, phone?, role: AGENT\|LEAD}` → `201`. 검증은 회원가입과 동일 |
+| PATCH | `/api/admin/members/{id}` | ADMIN | `{role?, status?}` (null 은 유지) |
+
+> - 계정 관리 제약: 본인 역할 변경·비활성화 금지(`MEMBER_SELF_CHANGE_FORBIDDEN`), 고객 ↔ 직원(AGENT·LEAD·ADMIN) 역할 전환 금지(`MEMBER_ROLE_NOT_ALLOWED`). AGENT 가 아닌 역할이 되면 `available=false`.
+> - 역할·상태가 바뀌면 그 회원의 Refresh 토큰을 전부 폐기한다 → 다음 재발급부터 새 권한/차단 적용. 이미 발급된 Access 토큰은 만료(30분)까지 유효.
 
 ## 3. 첨부 (백성준)
 | Method | URL | 권한 | 설명 |
@@ -63,10 +66,11 @@
 ## 4. FAQ · 템플릿 (백성준)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| GET | `/api/faqs` | 공개 | `?category=&keyword=` |
-| GET | `/api/faqs/{id}` | 공개 | 조회수 증가 |
-| GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천(상위 3) |
-| POST/PUT/DELETE | `/api/admin/faqs[/{id}]` | LEAD, ADMIN | CRUD |
+| GET | `/api/faqs` | 공개 | `?category=&keyword=&page=&size=` → 페이지 `{faqId, category, question, answer, published, viewCount, createdAt, updatedAt}`. **공개 글만**, 기본 조회수 높은 순 20개. keyword 는 질문·답변 부분 일치(대소문자 무시) |
+| GET | `/api/faqs/{id}` | 공개 | 조회수 +1 후 반환 (아코디언을 열 때 호출). 비공개·없는 글은 `404` |
+| GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천(상위 3) — S2 |
+| GET | `/api/admin/faqs` | LEAD, ADMIN | 관리 표용 목록 — 비공개 포함, 기본 최신순. 쿼리는 `/api/faqs` 와 같음 |
+| POST/PUT/DELETE | `/api/admin/faqs[/{id}]` | LEAD, ADMIN | `{category, question(≤300), answer(≤5,000), published?}` (published 생략 시 공개). POST `201`, DELETE 는 실제 삭제 |
 | GET | `/api/templates` | AGENT+ | `?category=&keyword=` |
 | POST/PUT/DELETE | `/api/admin/templates[/{id}]` | LEAD, ADMIN | CRUD |
 
