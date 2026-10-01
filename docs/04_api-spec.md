@@ -99,12 +99,12 @@
 | POST | `/api/tickets/{id}/replies` | 고객 본인/Guest | 추가 답글 (RESOLVED면 재문의 → IN_PROGRESS) |
 | GET | `/api/console/tickets` | AGENT(본인), LEAD+ | `?status=&priority=&category=&agentId=&sla=WARNING\|BREACHED&keyword=` |
 | GET | `/api/console/tickets/{id}` | AGENT+ | 상세 + 이력 |
-| PATCH | `/api/console/tickets/{id}/status` | 담당 AGENT, LEAD+ | `{toStatus, memo}` |
+| PATCH | `/api/console/tickets/{id}/status` | 담당 AGENT, LEAD+ | `{toStatus, memo}` — 전이표(PRD 5장) 위반 시 409 `TICKET_INVALID_TRANSITION`, 담당자가 아닌 AGENT 는 403 `TICKET_NOT_ASSIGNEE`. 담당자 변경(`toStatus=ASSIGNED`)은 이 API 가 아니라 배정 API 를 쓴다 |
 | PATCH | `/api/console/tickets/{id}/assign` | LEAD+ | `{agentId, memo}` 수동/재배정 |
 | POST | `/api/console/tickets/{id}/assign/auto` | LEAD+ | 자동 배정 재시도 |
 | PATCH | `/api/console/tickets/{id}/classification` | 담당 AGENT, LEAD+ | `{category, priority}` 수동 수정 (신수진의 AI 결과 overridden 기록은 신수진 포트 호출) |
 | POST | `/api/console/tickets/{id}/replies` | 담당 AGENT, LEAD+ | `{content, isInternal, aiDraftId?, attachmentIds?}` |
-| GET | `/api/console/tickets/{id}/histories` | AGENT+ | 상태 이력 |
+| GET | `/api/console/tickets/{id}/histories` | AGENT+ | 상태·배정·분류 이력을 `created_at` 오름차순으로 → `[{historyId, action, fromValue, toValue, actorName, actorType, memo, createdAt}]` (`actorName` 은 SYSTEM·GUEST 수행자면 null) |
 
 > 요청 제한: 공용 `RateLimitFilter`(백성준, IP 기준) → 초과 시 `429 COMMON_TOO_MANY_REQUESTS` + `Retry-After`(초).
 >
