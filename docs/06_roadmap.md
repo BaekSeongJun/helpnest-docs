@@ -57,7 +57,7 @@ flowchart LR
 - [x] ② (S0에서 이동) `.claude/agents`, `.claude/skills` 폴더와 08 §12 목록 틀 (S0에 생성됨 — agent·skill 추가 시 08 §12 표에 기록)
 - [x] 첨부 업로드 API (`FileStorage` 사용, 확장자/용량 검증) + ATTACHMENT
 - [x] 문의 접수 페이지(회원/비회원), 첨부 UI, 접수 완료 화면 (박민재 `POST /api/tickets` 연동)
-- [ ] 비회원 조회(Guest 토큰), 내 문의 목록/상세 페이지 (박민재 타임라인 컴포넌트 사용)
+- [x] 비회원 조회(Guest 토큰), 내 문의 목록/상세 페이지 (박민재 타임라인 컴포넌트 사용)
 - [x] 관리자 계정 관리(상담원/팀장 생성·역할 변경), 상담원 available 토글
 - [x] 회원가입 화면 (CM-02) — API는 S0 완료, 화면이 로드맵에서 빠져 있어 추가
 - [x] 공용 `RateLimitFilter`(비회원 문의·첨부·로그인·재설정 요청)
