@@ -45,6 +45,7 @@
 | PATCH | `/api/members/me` | 로그인 | `{name, phone}` 내 정보 수정 |
 | PATCH | `/api/members/me/password` | 로그인 | `{currentPassword, newPassword}` → Refresh 토큰 전체 폐기 |
 | PATCH | `/api/members/me/availability` | AGENT | `{available: true}` → 내 정보. 역할이 AGENT 가 아니면(LEAD·ADMIN 포함) `403 MEMBER_NOT_AGENT` |
+| GET | `/api/console/agents` | AGENT+ | 배정 드롭다운용 활성 상담원(상담 불가 포함) 이름순 → `[{memberId, name, available, activeCount}]`. `activeCount` 는 ASSIGNED·IN_PROGRESS 티켓 수(자동 배정과 같은 기준). 이메일·연락처는 주지 않는다 (CR #44) |
 | GET | `/api/admin/members` | ADMIN | 목록 `?role=&status=&page=&size=` (기본 가입일 최신순 20개) → 페이지 `{memberId, email, name, phone, role, status, available, createdAt}` |
 | POST | `/api/admin/members` | ADMIN | `{email, password, name, phone?, role: AGENT\|LEAD}` → `201`. 검증은 회원가입과 동일 |
 | PATCH | `/api/admin/members/{id}` | ADMIN | `{role?, status?}` (null 은 유지) |
@@ -95,16 +96,16 @@
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
 | POST | `/api/tickets` | 공개(비회원 포함) | 문의 접수 |
-| GET | `/api/tickets/my` | CUSTOMER | 내 문의 목록 |
-| GET | `/api/tickets/{id}` | 고객 본인/Guest 토큰/AGENT+ | 상세(고객에겐 내부 메모 제외) |
-| POST | `/api/tickets/{id}/replies` | 고객 본인/Guest | 추가 답글 (RESOLVED면 재문의 → IN_PROGRESS) |
-| GET | `/api/console/tickets` | AGENT(본인), LEAD+ | `?status=&priority=&category=&agentId=&sla=WARNING\|BREACHED&keyword=` |
-| GET | `/api/console/tickets/{id}` | AGENT+ | 상세 + 이력 |
+| GET | `/api/tickets/my` | CUSTOMER | 내 문의 목록 `?page=&size=` (기본 접수일 최신순 20개) → 페이지 `{ticketId, ticketNo, title, customerId, customerName, category, priority, sentiment, status, agentId, agentName, firstResponseDueAt, firstRespondedAt, slaWarned, slaBreached, createdAt}`. Guest 토큰은 403 (토큰이 티켓 1건에만 유효해 목록이 성립하지 않음) |
+| GET | `/api/tickets/{id}` | 고객 본인 / Guest 토큰(발급 대상 1건) | 상세 — 답변 목록에서 **내부 메모를 조회 쿼리 단계에서 제외**한다. 남의 티켓·없는 티켓·Guest 토큰의 ticketId 불일치는 **모두 404** `TICKET_NOT_FOUND` (403 을 주면 티켓 존재 여부가 드러난다). AGENT+ 는 이 경로가 아니라 `GET /api/console/tickets/{id}` 를 쓴다 — 상담원은 내부 메모와 이력이 함께 필요하다 |
+| POST | `/api/tickets/{id}/replies` | 고객 본인 / Guest 토큰 | `{content, attachmentIds?}` → 201 + ReplyResponse. RESOLVED 면 재문의로 IN_PROGRESS 전이 + STATUS_CHANGE 이력(메모 `고객 재문의`). CLOSED 면 409 `TICKET_ALREADY_CLOSED` (종료 티켓은 담당자가 손을 뗀 상태라 답글만 쌓인다 → 새 문의로 받는다). `isInternal` 을 받지 않는다 — 고객은 내부 메모를 만들 수 없다 |
+| GET | `/api/console/tickets` | AGENT(본인), LEAD+ | `?status=&priority=&category=&agentId=&unassigned=true&sla=WARNING\|BREACHED&keyword=&page=&size=&sort=` → 페이지(목록 행 필드는 §7 고객 목록과 동일). 기본 정렬 **SLA 임박순**(`firstResponseDueAt` ASC). `unassigned=true` 는 미배정(`agent_id IS NULL`)만이며 `agentId` 와 상호 배타(이쪽이 우선). **AGENT 가 `agentId` 로 남의 티켓을 조회하면 본인 조건으로 덮어쓴다**(거부가 아니라 치환 — 거부는 상담원 존재를 노출한다). `unassigned=true` 는 AGENT 도 쓸 수 있다(CS-01 미배정 탭). `keyword` 는 티켓번호·제목·본문 부분 일치 |
+| GET | `/api/console/tickets/{id}` | AGENT+ | 상세 — 답변에 **내부 메모 포함**(고객용과 다른 점). 담당자가 아니어도 열 수 있다(인수인계·팀장 확인). 상태 이력은 이 응답에 넣지 않고 `GET /{id}/histories` 가 제공한다 — CS-02 우측 독립 패널이라 분리하면 상태 변경 후 이력만 다시 받을 수 있다 |
 | PATCH | `/api/console/tickets/{id}/status` | 담당 AGENT, LEAD+ | `{toStatus, memo}` — 전이표(PRD 5장) 위반 시 409 `TICKET_INVALID_TRANSITION`, 담당자가 아닌 AGENT 는 403 `TICKET_NOT_ASSIGNEE`. 담당자 변경(`toStatus=ASSIGNED`)은 이 API 가 아니라 배정 API 를 쓴다 |
 | PATCH | `/api/console/tickets/{id}/assign` | LEAD+ | `{agentId, memo}` 수동/재배정 |
 | POST | `/api/console/tickets/{id}/assign/auto` | LEAD+ | 자동 배정 재시도 |
 | PATCH | `/api/console/tickets/{id}/classification` | 담당 AGENT, LEAD+ | `{category, priority}` 수동 수정 (신수진의 AI 결과 overridden 기록은 신수진 포트 호출) |
-| POST | `/api/console/tickets/{id}/replies` | 담당 AGENT, LEAD+ | `{content, isInternal, aiDraftId?, attachmentIds?}` |
+| POST | `/api/console/tickets/{id}/replies` | 담당 AGENT, LEAD+ | `{content, isInternal, aiDraftId?, attachmentIds?}` → 201 + `{replyId, writerType, writerName, content, isInternal, attachments, createdAt}`. `isInternal` 은 **필수**(빠뜨리면 400 — 기본값 false 로 처리하면 내부 메모가 고객에게 노출된다). `isInternal=false` 일 때만 `first_responded_at` 기록(최초 1회)과 ASSIGNED→IN_PROGRESS 전이가 일어난다 |
 | GET | `/api/console/tickets/{id}/histories` | AGENT+ | 상태·배정·분류 이력을 `created_at` 오름차순으로 → `[{historyId, action, fromValue, toValue, actorName, actorType, memo, createdAt}]` (`actorName` 은 SYSTEM·GUEST 수행자면 null) |
 
 > 요청 제한: 공용 `RateLimitFilter`(백성준, IP 기준) → 초과 시 `429 COMMON_TOO_MANY_REQUESTS` + `Retry-After`(초).
