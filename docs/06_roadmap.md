@@ -53,7 +53,7 @@ flowchart LR
 ### S1 (10/2 ~ 10/8)
 > S0에서 옮겨 온 항목(①~②)은 **10/2~10/3에 먼저** 끝낸다. 그 전까지 다른 사람은 `components/ui`(shadcn)를 직접 사용하고, 공용 조합 컴포넌트가 머지되면 교체한다.
 
-- [ ] ① (S0에서 이동) 공용 조합 컴포넌트(PageHeader, DataTable, EmptyState, ErrorState, LoadingSkeleton, ConfirmDialog, 배지 5종, PlainText) + 샘플 페이지(`/dev/ui`)
+- [x] ① (S0에서 이동) 공용 조합 컴포넌트(PageHeader, DataTable, EmptyState, ErrorState, LoadingSkeleton, ConfirmDialog, 배지 5종, PlainText) + 샘플 페이지(`/dev/ui`)
 - [x] ② (S0에서 이동) `.claude/agents`, `.claude/skills` 폴더와 08 §12 목록 틀 (S0에 생성됨 — agent·skill 추가 시 08 §12 표에 기록)
 - [ ] 첨부 업로드 API (`FileStorage` 사용, 확장자/용량 검증) + ATTACHMENT
 - [ ] 문의 접수 페이지(회원/비회원), 첨부 UI, 접수 완료 화면 (박민재 `POST /api/tickets` 연동)
