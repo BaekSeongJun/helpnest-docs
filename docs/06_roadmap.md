@@ -133,9 +133,9 @@ flowchart LR
 - [x] CloudFront(PRD Q20 ③) 구성 사전 테스트 — 임시 EC2 + CloudFront로 HTTPS API·WSS 연결 확인 (배포 주에 막히지 않도록) — HTTPS 200·WSS 101 확인, 임시 자원 삭제
 
 ### S1 (10/2 ~ 10/8)
-- [ ] `SpringAiLlmClient` + 마스킹 + 타임아웃/재시도
-- [ ] AI-1 분류 리스너(비동기) → `applyClassification` / 실패 fallback
-- [ ] 분류 조회/재분류 API + `AiAnalysisPanel` 컴포넌트
+- [x] `SpringAiLlmClient` + 마스킹 + 타임아웃/재시도 (back #20)
+- [x] AI-1 분류 리스너(비동기) → `applyClassification` / 실패 fallback (back #23)
+- [x] 분류 조회/재분류 API + `AiAnalysisPanel` 컴포넌트 (back #24, front #7)
 - [ ] 분류 테스트 샘플 30건 + 정확도 측정
 
 ### S2 (10/9 ~ 10/14)
