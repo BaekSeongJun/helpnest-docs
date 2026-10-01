@@ -295,10 +295,12 @@ CREATE TABLE mail_log (
   to_email    VARCHAR(100) NOT NULL,
   mail_type   VARCHAR(30) NOT NULL,            -- RESOLVED_SURVEY / AGENT_REPLY / PASSWORD_RESET / GUEST_PASSWORD_RESET
   status      VARCHAR(10) NOT NULL,            -- SENT / FAILED / LOGGED(local)
-  retry_count INT NOT NULL DEFAULT 0,
+  retry_count INT NOT NULL DEFAULT 0,            -- 재시도 횟수(최대 3)
   error_msg   VARCHAR(500),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  sent_at     TIMESTAMPTZ
+  sent_at     TIMESTAMPTZ,
+  subject     VARCHAR(200),                    -- 재시도용 렌더링 결과
+  body        TEXT                             -- HTML. 설문·재설정 토큰 URL 포함 → 로그 출력 금지
 );
 ```
 

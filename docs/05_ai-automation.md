@@ -101,18 +101,20 @@ domain/ai/service/ClassifyService, DraftService
 | 트리거 | 백성준 `SurveyListener`가 설문 생성 후 `MailSender.sendResolvedMail(command)` 호출 |
 | 수신자 | 회원 이메일 또는 `guest_email` |
 | 제목 | `[HelpNest] 문의({ticketNo})가 해결되었습니다` |
-| 본문 | 고객명, 문의 제목, 최종 답변 요약(LLM 1문장 요약, 실패 시 답변 앞 200자), 설문 버튼(`{FRONT_ORIGIN}/survey/{token}`), 설문 만료 시각 |
-| 구현 | `local`: `LogMailSender`(콘솔 출력 + MAIL_LOG `LOGGED`) / `prod`: `SesMailSender` |
-| 실패 | MAIL_LOG `FAILED` + 5분 간격 최대 3회 재시도 스케줄러 |
+| 본문 | 고객명, 문의 제목, 최종 답변 요약, 설문 버튼(`{FRONT_ORIGIN}/survey/{token}`), 설문 만료 시각 |
+| 요약 | 호출자는 `ResolvedMailCommand.finalReply`(최종 공개 답변 원문)만 넘긴다. `MailSender` 가 LLM 1문장 요약, 실패·빈값이면 앞 200자 |
+| 구현 | `DefaultMailSender`(렌더링 `MailTemplates` → 전송 `MailTransport` → MAIL_LOG 저장). 전송: `local` `LogMailTransport`(콘솔 + `LOGGED`) / `prod` SES(S3) |
+| 실패 | 호출자에 예외 전파 없음. MAIL_LOG `FAILED` → `MailRetryScheduler` 가 저장된 제목·본문을 5분 간격 최대 3회 재전송 (`app.mail.retry-delay`) |
 
 ### 5.1 기타 메일 (같은 `MailSender`, 신수진 구현)
 | 메일 | 호출자 | 내용 |
 |---|---|---|
-| `AGENT_REPLY` | 박민재 (`ReplyCreatedEvent`, 공개 답변) | `[HelpNest] 문의({ticketNo})에 답변이 등록되었습니다` / 답변 앞 200자 + 문의 보기 링크(회원: 내 문의, 비회원: 조회 페이지). 10분 내 연속 답변은 1통 |
+| `AGENT_REPLY` | 박민재 (`ReplyCreatedEvent`, 공개 답변) | `[HelpNest] 문의({ticketNo})에 답변이 등록되었습니다` / 답변 앞 200자 + 문의 보기 링크(회원: 내 문의, 비회원: 조회 페이지). 10분 내 연속 답변은 1통 — **묶음은 `MailSender` 가 처리, 호출자는 공개 답변마다 호출** |
 | `PASSWORD_RESET` | 백성준 | 재설정 링크 `{FRONT_ORIGIN}/reset-password?token=` (30분) |
 | `GUEST_PASSWORD_RESET` | 백성준 | 조회 비밀번호 재설정 링크 `{FRONT_ORIGIN}/inquiry/lookup/reset?token=` (30분) |
 
-> 메일 HTML 템플릿(Thymeleaf 등)은 신수진 소유 `resources/templates/mail/`. 색·로고는 디자인 토큰의 primary 값과 맞춘다.
+> 메일 HTML 템플릿은 신수진 소유 `infra/mail/MailTemplates`(Java text block, Thymeleaf 미도입). 사용자 값·URL 은 모두 HTML 이스케이프, 색은 디자인 토큰 primary 근사 hex 를 인라인으로 쓴다(메일 클라이언트는 CSS 변수 미지원).
+> MAIL_LOG `body` 에는 설문·재설정 토큰 URL 이 그대로 저장된다 → 로그에 출력하지 않고, 조회는 운영자로 제한한다.
 
 ## 6. 품질 확인
 - 테스트용 문의 30건(유형별 4~5건, 불만 10건, 개인정보 포함 3건)을 back `src/test/resources/ai/samples.json`으로 두고 분류 정확도를 측정해 **이 절에 기록**한다.
