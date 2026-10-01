@@ -16,6 +16,7 @@ domain/ai/service/ClassifyService, DraftService
 - 제공자는 `application-ai.yml` + 환경변수(`LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`)로 교체 (PRD Q11).
 - Spring AI **2.0.1** 사용 (Spring Boot 4.0/4.1 호환 GA 라인, `spring-ai-bom`으로 버전 관리) — [아키텍처 §1](02_architecture.md#1-기술-스택-백성준).
 - 키가 없거나 `LLM_PROVIDER=mock`이면 **`MockLlmClient`**(키워드 규칙 기반)로 동작 → 백성준·박민재가 LLM 키 없이도 로컬 개발 가능.
+- 기본 모델 **`gemini-3.5-flash-lite`** (`LLM_MODEL` 로 변경, Gemini 실제 호출 모델과 `TICKET_AI_RESULT.model` 기록값이 같다). 선정 근거는 [§6](#6-품질-확인).
 - 타임아웃 10초, 재시도 1회, 입력 최대 4,000자(초과 시 앞부분 사용).
 - **개인정보 마스킹:** 전송 전 전화번호(`010-****-1234`), 이메일(`h***@example.com`), 카드/계좌 형태 숫자열 마스킹.
 
@@ -114,6 +115,24 @@ domain/ai/service/ClassifyService, DraftService
 > 메일 HTML 템플릿(Thymeleaf 등)은 신수진 소유 `resources/templates/mail/`. 색·로고는 디자인 토큰의 primary 값과 맞춘다.
 
 ## 6. 품질 확인
-- Sprint 1에 테스트용 문의 30건(유형별 4~5건, 불만 10건 포함)을 `src/test/resources/ai/samples.json`으로 만들고 분류 정확도를 측정해 README에 기록.
+- 테스트용 문의 30건(유형별 4~5건, 불만 10건, 개인정보 포함 3건)을 back `src/test/resources/ai/samples.json`으로 두고 분류 정확도를 측정해 **이 절에 기록**한다.
 - 목표: 유형 정확도 80% 이상, 불만 감지 재현율 80% 이상.
+- 측정: `ClassificationAccuracyTest` — 실제 LLM 호출 비용이 있어 평소 `verify` 에서는 건너뛰고, 아래처럼 켤 때만 실행한다(운영과 같은 `ClassifyService` 프롬프트 사용). 샘플셋 구성은 `AiSampleSetTest` 가 항상 검사한다.
+  ```bash
+  SPRING_PROFILES_ACTIVE=local LLM_PROVIDER=google-genai AI_ACCURACY=true AI_ACCURACY_DELAY_MS=4000 \
+    ./mvnw test -Dtest=ClassificationAccuracyTest
+  ```
+  `AI_ACCURACY_DELAY_MS` 는 무료 등급 분당 한도(429) 회피용 호출 간격이다. 없으면 연속 호출 중 일부가 타임아웃으로 실패해 오답으로 집계된다.
+
+### 6.1 측정 결과 (2026-10-01, S1)
+| 모델 | 유형 정확도 | 불만 재현율 | 비고 |
+|---|---|---|---|
+| **`gemini-3.5-flash-lite`** (채택) | **30/30 = 100%** | **10/10 = 100%** | 응답 ~1초, 사고(thinking) 토큰 없음. 호출 간격 4초에서 타임아웃·429 0건 |
+| `gemini-3.5-flash-lite` (간격 없음) | 28/30 = 93.3% | 10/10 = 100% | 오답 2건은 분류 오류가 아니라 분당 한도로 인한 호출 실패 |
+| `gemini-3.5-flash` | — | — | 사고 모델이라 단문에도 ~13초 → 10초 타임아웃 초과 |
+| `gemini-3.8-flash` | — | — | 무료 등급 한도가 작아 측정 중 429 소진 |
+| `gemini-2.5-flash` | — | — | 신규 사용자에게 제공 중단(404) |
+
+- 감정 오탐 2건(실제 NEUTRAL → NEGATIVE): #9 "환불 금액이 이상해요", #22 "앱이 계속 꺼져요". 둘 다 금전·오류 상황이라 우선순위가 1단계 올라가는 정도로, 놓치는 쪽(재현율)보다 비용이 작아 허용한다.
+- 운영 트래픽(접수 시 1건씩)은 분당 한도에 걸리지 않지만, 대량 재분류·데모 시연 전에는 한도를 확인한다. 프롬프트·모델을 바꾸면 위 명령으로 다시 측정해 이 표를 갱신한다.
 - LLM 응답 시간·실패율은 TICKET_AI_RESULT의 `latency_ms`, `status`로 대시보드에서 확인(선택).
