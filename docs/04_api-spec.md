@@ -66,10 +66,11 @@
 ## 4. FAQ · 템플릿 (백성준)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| GET | `/api/faqs` | 공개 | `?category=&keyword=` |
-| GET | `/api/faqs/{id}` | 공개 | 조회수 증가 |
-| GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천(상위 3) |
-| POST/PUT/DELETE | `/api/admin/faqs[/{id}]` | LEAD, ADMIN | CRUD |
+| GET | `/api/faqs` | 공개 | `?category=&keyword=&page=&size=` → 페이지 `{faqId, category, question, answer, published, viewCount, createdAt, updatedAt}`. **공개 글만**, 기본 조회수 높은 순 20개. keyword 는 질문·답변 부분 일치(대소문자 무시) |
+| GET | `/api/faqs/{id}` | 공개 | 조회수 +1 후 반환 (아코디언을 열 때 호출). 비공개·없는 글은 `404` |
+| GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천(상위 3) — S2 |
+| GET | `/api/admin/faqs` | LEAD, ADMIN | 관리 표용 목록 — 비공개 포함, 기본 최신순. 쿼리는 `/api/faqs` 와 같음 |
+| POST/PUT/DELETE | `/api/admin/faqs[/{id}]` | LEAD, ADMIN | `{category, question(≤300), answer(≤5,000), published?}` (published 생략 시 공개). POST `201`, DELETE 는 실제 삭제 |
 | GET | `/api/templates` | AGENT+ | `?category=&keyword=` |
 | POST/PUT/DELETE | `/api/admin/templates[/{id}]` | LEAD, ADMIN | CRUD |
 
