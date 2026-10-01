@@ -52,8 +52,13 @@
 ## 3. 첨부 (백성준)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| POST | `/api/attachments` | 공개(비회원 포함) | multipart `files[]` (≤5개, 각 ≤10MB) → `[{attachmentId, originalName, size}]` |
-| GET | `/api/attachments/{id}/download` | 티켓 관계자 | presigned URL(로컬은 스트림) |
+| POST | `/api/attachments` | 공개(비회원 포함) | multipart 필드 `files` 반복 (≤5개, 각 ≤10MB) → `201` `[{attachmentId, originalName, size}]` |
+| GET | `/api/attachments/{id}/download` | 업로더, AGENT+, 티켓 고객 본인, Guest(같은 티켓) | prod `302` presigned URL / 로컬 스트림(`filename*=UTF-8''…`). 고객·Guest 는 내부 메모 첨부 불가 |
+
+> - 허용 확장자: jpg·jpeg·png·gif·webp·pdf·txt·doc·docx·xls·xlsx·ppt·pptx·hwp·hwpx. Content-Type 은 클라이언트 값이 아니라 확장자로 서버가 정한다.
+> - 오류: `ATTACHMENT_EMPTY`, `ATTACHMENT_TOO_MANY`, `ATTACHMENT_TOO_LARGE`, `ATTACHMENT_INVALID_TYPE`, `ATTACHMENT_LINK_DENIED`(티켓 접수 시 연결 불가 — 남의 첨부·이미 연결된 첨부)
+> - `attachmentId` 는 추측 불가 난수(JS 안전 정수 범위)다. 비회원 첨부는 이 ID 를 아는 것이 소유 증명이므로 화면·URL 에 불필요하게 노출하지 않는다.
+> - 업로드 후 24시간 안에 티켓·답글에 연결되지 않은 첨부는 자동 삭제된다.
 
 ## 4. FAQ · 템플릿 (백성준)
 | Method | URL | 권한 | 설명 |
