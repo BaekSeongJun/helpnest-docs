@@ -134,5 +134,6 @@ domain/ai/service/ClassifyService, DraftService
 | `gemini-2.5-flash` | — | — | 신규 사용자에게 제공 중단(404) |
 
 - 감정 오탐 2건(실제 NEUTRAL → NEGATIVE): #9 "환불 금액이 이상해요", #22 "앱이 계속 꺼져요". 둘 다 금전·오류 상황이라 우선순위가 1단계 올라가는 정도로, 놓치는 쪽(재현율)보다 비용이 작아 허용한다.
+- 비용: `gemini-3.5-flash-lite` 는 무료 등급 대상(입력·출력 무료, 유료 시 1M 토큰당 입력 $0.30·출력 $2.50, 2026-10-01 [가격표](https://ai.google.dev/gemini-api/docs/pricing) 기준). **무료 등급 전송 데이터는 Google 제품 개선에 사용**되므로 개발·시연용으로만 쓰고, 실제 고객 데이터 운영 시에는 유료 등급으로 전환한다(마스킹은 전화·이메일·카드/계좌만 가린다). 한도(RPM·RPD)는 [AI Studio](https://aistudio.google.com/rate-limit)에서 확인.
 - 운영 트래픽(접수 시 1건씩)은 분당 한도에 걸리지 않지만, 대량 재분류·데모 시연 전에는 한도를 확인한다. 프롬프트·모델을 바꾸면 위 명령으로 다시 측정해 이 표를 갱신한다.
 - LLM 응답 시간·실패율은 TICKET_AI_RESULT의 `latency_ms`, `status`로 대시보드에서 확인(선택).
