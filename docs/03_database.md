@@ -89,6 +89,7 @@ CREATE TABLE refresh_token (
   token_hash  VARCHAR(200) NOT NULL UNIQUE,
   expires_at  TIMESTAMPTZ NOT NULL,
   revoked     BOOLEAN NOT NULL DEFAULT FALSE,
+  rotated_at  TIMESTAMPTZ,                       -- 회전(재발급)으로 폐기된 시각. 30초 안 재사용은 응답 유실·동시 탭으로 보고 재발급. 로그아웃·일괄 폐기는 NULL
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
