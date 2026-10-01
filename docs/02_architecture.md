@@ -206,7 +206,7 @@ com.helpnest
 | `FileStorage` | 신수진 | 백성준 | `upload(MultipartFile, keyPrefix)`, `getDownloadUrl(key)`, `delete(key)` |
 | `AiResultPort` | 신수진 | 박민재 | `markOverridden(ticketId, memberId, category, priority)` (상담원 수동 분류 수정 기록) |
 | `NotificationPort` | 박민재 | 백성준, 신수진 | `notify(receiverId, type, ticketId, message)` |
-| `TicketGuestPort` | 박민재 | 백성준 | `verifyGuest(ticketNo, email)` → ticketId, `updateGuestPassword(ticketId, passwordHash)` (비회원 조회 비밀번호 재설정) |
+| `TicketGuestPort` | 박민재 | 백성준 | `verifyGuest(ticketNo, email)` → ticketId, `findGuestPasswordHash(ticketId)` → BCrypt 해시, `updateGuestPassword(ticketId, passwordHash)` (비회원 로그인·조회 비밀번호 재설정). 세 메서드 모두 없으면 예외가 아니라 null — 존재 여부가 응답으로 드러나면 계정 열거가 된다. BCrypt 비교·해싱은 호출자(백성준) 책임이라 원문 비밀번호는 경계를 넘지 않는다 |
 | `MemberQueryPort` | 백성준 | 박민재, 신수진 | `findAssignableAgents()`, `getMember(id)`, `touchLastAssigned(agentId)` |
 
 ### 5.3 핵심 시퀀스 — 접수부터 종료까지
