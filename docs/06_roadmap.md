@@ -102,15 +102,15 @@ flowchart LR
 
 ### S2 (10/9 ~ 10/14)
 - [x] WebSocket/STOMP 설정 + JWT 인터셉터 (`WebSocketConfig`, `StompAuthInterceptor`)
-- [ ] 프론트 `stompClient.ts`
+- [x] 프론트 `stompClient.ts` — 탭당 소켓 하나 공유, 재연결 시 구독 복구, 토큰은 getter 주입 (front #35)
 - [x] NOTIFICATION 저장 + `/user/queue/notifications` 푸시
-- [ ] `NotificationBell` — `notification-bell-slot.tsx` 에 자리만 있다(백성준이 Header 배치 완료)
+- [x] `NotificationBell` (CS-08) — 미읽음 배지·최근 20건·모두 읽음, 실시간 푸시 (front #35·#38), 슬롯 연결은 CR #34
 - [x] SLA 스케줄러(임박 80%/초과), 목록 SLA 배지
-- [ ] SLA 정책 관리 화면(AD-04) — API 는 back #81
+- [x] SLA 정책 관리 화면(AD-04) — 행 내 편집, 임박 시점은 서버 계산값만 표시, 수정은 ADMIN 만 (front #36, API 는 back #81)
 - [x] 자동 종료 스케줄러(RESOLVED 72h) + `SurveySubmittedEvent` → CLOSED — `AutoCloseScheduler`(10분 주기) + `TicketCloseListener`, 두 경로 모두 `TicketService.changeStatus` 를 거쳐 이력·알림이 같게 남는다
 - [x] **고객 답변 알림**: 공개 답변 → 회원 웹 알림(`AGENT_REPLY`) + `MailSender.sendAgentReplyMail` 호출(10분 묶음)
 - [x] `TicketGuestPort` 구현 (비회원 조회 비밀번호 재설정용) — `TicketGuestAdapter`, S2 중 완료됐으나 체크가 누락돼 있었다
-- [ ] 티켓 상세에 신수진·백성준 컴포넌트 통합(AiAnalysisPanel, AiDraftButton, TemplatePicker)
+- [x] 티켓 상세에 신수진·백성준 컴포넌트 통합(AiAnalysisPanel, AiDraftButton, TemplatePicker) — 통합 중 발견한 툴바 버튼 답변 오발송도 함께 차단 (front #37)
 
 ### S3 (10/15 ~ 10/18)
 - [ ] CHAT_ROOM/CHAT_MESSAGE, 채팅 요청 → **대기열(WAITING, 순번 푸시)** → 상담원 배정 시 OPEN + CHAT 티켓 생성
