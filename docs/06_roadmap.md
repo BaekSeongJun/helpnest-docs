@@ -107,9 +107,9 @@ flowchart LR
 - [ ] `NotificationBell` — `notification-bell-slot.tsx` 에 자리만 있다(백성준이 Header 배치 완료)
 - [x] SLA 스케줄러(임박 80%/초과), 목록 SLA 배지
 - [ ] SLA 정책 관리 화면(AD-04) — API 는 back #81
-- [ ] 자동 종료 스케줄러(RESOLVED 72h) + `SurveySubmittedEvent` → CLOSED
+- [x] 자동 종료 스케줄러(RESOLVED 72h) + `SurveySubmittedEvent` → CLOSED — `AutoCloseScheduler`(10분 주기) + `TicketCloseListener`, 두 경로 모두 `TicketService.changeStatus` 를 거쳐 이력·알림이 같게 남는다
 - [x] **고객 답변 알림**: 공개 답변 → 회원 웹 알림(`AGENT_REPLY`) + `MailSender.sendAgentReplyMail` 호출(10분 묶음)
-- [ ] `TicketGuestPort` 구현 (비회원 조회 비밀번호 재설정용)
+- [x] `TicketGuestPort` 구현 (비회원 조회 비밀번호 재설정용) — `TicketGuestAdapter`, S2 중 완료됐으나 체크가 누락돼 있었다
 - [ ] 티켓 상세에 신수진·백성준 컴포넌트 통합(AiAnalysisPanel, AiDraftButton, TemplatePicker)
 
 ### S3 (10/15 ~ 10/18)
