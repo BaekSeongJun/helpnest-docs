@@ -8,7 +8,7 @@
 - 인증: `Authorization: Bearer {accessToken}` / 비회원 티켓 조회는 Guest 토큰(해당 ticketId 한정 scope)
 - 토큰 보관: Access·Guest 토큰은 프론트 **메모리**, Refresh는 **httpOnly 쿠키**(JS 접근 불가). REST는 Next.js 프록시(`/api/*` rewrites)로 같은 출처에서 호출하므로 CORS 불필요. 예외로 **첨부 업로드(`POST /api/attachments`)와 `/ws`만** 백엔드에 직접 호출 → 이 두 경로만 CORS/Origin에 `FRONT_ORIGIN` 허용 ([02 §2.1](02_architecture.md#21-요청-경로-배포-환경))
 - 날짜: ISO-8601 (`2026-10-01T10:30:00+09:00`)
-- **권한 검증**: 이 문서의 "권한" 열은 back `RoleAccessMatrixTest` 가 비로그인·Guest·고객·상담원·팀장·관리자 6종으로 대조한다(구현된 엔드포인트 한정). 권한 열을 바꾸면 그 테스트의 `matrix()` 행도 같은 PR 에서 고친다. 현재 알려진 어긋남: `GET /api/tickets/my` 는 CUSTOMER 전용으로 적혀 있으나 로그인 회원 누구나 200(직원은 빈 목록) — 박민재 CR 대상
+- **권한 검증**: 이 문서의 "권한" 열은 back `RoleAccessMatrixTest` 가 비로그인·Guest·고객·상담원·팀장·관리자 6종으로 대조한다(구현된 엔드포인트 한정). 권한 열을 바꾸면 그 테스트의 `matrix()` 행도 같은 PR 에서 고친다.
 - 페이지: `?page=0&size=20&sort=createdAt,desc`
 
 ### 1.1 응답 형식
