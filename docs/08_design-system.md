@@ -35,26 +35,27 @@
 
 ---
 
-## 3. 디자인 토큰 (틀 + 초기값)
+## 3. 디자인 토큰 (틀 + 최종값)
 
-> 초기값은 **퍼플/인디고(AI 강조)** 톤의 임시값이다. 최종값은 Sprint 3 이후 조정(PRD Q17).
-> 형식은 shadcn/ui + Tailwind CSS 변수(`:root`, `.dark`). 아래 이름만 고정하고 값은 바뀔 수 있다.
+> 값은 S3 최종 디자인 정리(PRD Q17)에서 **블루 primary** 로 확정했다. 초기에는 퍼플/인디고 임시값이었다.
+> 형식은 shadcn/ui + Tailwind CSS 변수(`:root`, `.dark`). 아래 이름만 고정하고 값은 바뀔 수 있다. 정확한 값은 `globals.css` 가 기준이고, 표의 색 이름은 가장 가까운 Tailwind 색을 적은 **참고용**이다.
+> `info`(배정)를 하늘색에서 청록으로 옮긴 이유: primary 가 블루가 되면 `배정`(info)과 `처리중`(primary) 배지가 색으로 구분되지 않기 때문이다. `ai` 보라도 블루에서 더 멀어지게 조정했다.
 
 ### 3.1 색 (의미 토큰)
-| 토큰 | Tailwind 클래스 | 용도 | 초기값(라이트, 참고) |
+| 토큰 | Tailwind 클래스 | 용도 | 최종값(라이트, 참고) |
 |---|---|---|---|
 | `--background` / `--foreground` | `bg-background` `text-foreground` | 페이지 바탕/기본 글자 | white / slate-900 |
 | `--card` / `--card-foreground` | `bg-card` | 카드·패널 | white |
 | `--muted` / `--muted-foreground` | `bg-muted` `text-muted-foreground` | 보조 배경·설명 글자 | slate-100 / slate-500 |
-| `--primary` / `--primary-foreground` | `bg-primary` `text-primary-foreground` | 주요 버튼·링크·선택 상태 | **indigo-600** / white |
-| `--secondary` | `bg-secondary` | 보조 버튼 | indigo-50 |
-| `--accent` | `bg-accent` | hover·선택 행 | indigo-50 |
-| `--ai` / `--ai-foreground` | `bg-ai` `text-ai` | **AI 기능 전용 강조**(AI 패널, 초안 버튼, AI 배지) | violet-600 |
+| `--primary` / `--primary-foreground` | `bg-primary` `text-primary-foreground` | 주요 버튼·링크·선택 상태 | **blue-600** (`#2563eb`) / white |
+| `--secondary` | `bg-secondary` | 보조 버튼 | blue-50 |
+| `--accent` | `bg-accent` | hover·선택 행 | blue-50 |
+| `--ai` / `--ai-foreground` | `bg-ai` `text-ai` | **AI 기능 전용 강조**(AI 패널, 초안 버튼, AI 배지) | purple-600 |
 | `--success` | `bg-success` `text-success` | 해결·성공 | emerald-600 |
 | `--warning` | `bg-warning` `text-warning` | SLA 임박·주의 | amber-500 |
 | `--destructive` | `bg-destructive` | 삭제·SLA 초과·긴급·오류 | red-600 |
-| `--info` | `bg-info` `text-info` | 배정·안내 | sky-600 |
-| `--border` / `--input` / `--ring` | `border-border` `ring-ring` | 테두리·입력·포커스 | slate-200 / slate-200 / indigo-500 |
+| `--info` | `bg-info` `text-info` | 배정·안내 | cyan-700 |
+| `--border` / `--input` / `--ring` | `border-border` `ring-ring` | 테두리·입력·포커스 | slate-200 / slate-200 / blue-500 |
 
 > `--ai`, `--success`, `--warning`, `--info`는 shadcn 기본에 없는 **커스텀 토큰** — 백성준이 S0에 `globals.css`에 추가한다.
 
@@ -215,6 +216,8 @@
 2. 백성준이 `globals.css` 토큰 값, `components/ui` 스타일, 폰트, 로고 조정 (feature/BSJ-design-polish)
 3. 3명이 각자 화면 스크린샷 확인 → 깨진 곳은 해당 소유자가 수정
 4. 메일 템플릿(신수진)의 색·로고를 최종 토큰 값에 맞춤
+
+> **로고 (임시안)**: 화면에서는 `components/layout/logo.tsx` 의 `Logo` 컴포넌트(마크는 `currentColor` → primary 토큰을 따라감)를 쓴다. CSS 를 못 쓰는 곳(메일 등)은 고정색 `#2563eb` 사본 `public/logo.svg` 를, 파비콘은 `src/app/icon.svg` 를 쓴다. 최종 로고가 정해지면 이 세 파일만 바꾼다.
 
 ## 14. PR 전 UI 셀프 체크
 ```bash
