@@ -139,10 +139,10 @@ flowchart LR
 - [x] 분류 테스트 샘플 30건 + 정확도 측정 (back #33, 결과 05 §6.1)
 
 ### S2 (10/9 ~ 10/14)
-- [ ] AI-2 답변 초안(FAQ·과거 답변 검색 + 프롬프트) API + `AiDraftButton`
-- [ ] AI-3 결과 메일 템플릿 + MAIL_LOG + 재시도 스케줄러
-- [ ] 메일 추가: `sendAgentReplyMail`, `sendPasswordResetMail` (회원·비회원 공용 템플릿)
-- [ ] 대시보드 API(요약·상담원별·본인) + 대시보드 페이지(KPI 카드, 분포 차트, 상담원 표)
+- [x] AI-2 답변 초안(FAQ·과거 답변 검색 + 프롬프트) API + `AiDraftButton` (back #55, front #22, 05 §4.4)
+- [x] AI-3 결과 메일 템플릿 + MAIL_LOG + 재시도 스케줄러 (back #50·#51·#53, docs #31)
+- [x] 메일 추가: `sendAgentReplyMail`, `sendPasswordResetMail` (회원·비회원 공용 템플릿) (back #50·#51)
+- [ ] 대시보드 API(요약·상담원별·본인) + 대시보드 페이지(KPI 카드, 분포 차트, 상담원 표) — API back #57 머지, 페이지 front #26 리뷰 중
 
 ### S3 (10/15 ~ 10/18)
 - [ ] 월간 리포트 API + 페이지(유형별 건수·전월 대비·처리시간·SLA·만족도·불만 비율)

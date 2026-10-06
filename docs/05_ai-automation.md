@@ -63,9 +63,11 @@ domain/ai/service/ClassifyService, DraftService
 ### 4.1 참고 자료 검색 (RAG-lite, 추가 인프라 없음)
 | 소스 | 방법 | 개수 |
 |---|---|---|
-| FAQ | `FaqQueryPort.findPublishedByCategory(category, keyword, 3)` — 같은 유형 + 제목/본문 키워드 `ILIKE` | 최대 3 |
+| FAQ | `FaqQueryPort.findPublishedByCategory(category, null, 3)` — 같은 유형의 공개 FAQ. 키워드는 넘기지 않는다(제목 전체를 `ILIKE` 키워드로 쓰면 거의 일치하지 않음) | 최대 3 |
 | 과거 답변 | `TicketQueryPort.findResolvedReplies(category, 3)` — 같은 유형, RESOLVED/CLOSED, 만족도 4 이상 우선 | 최대 3 |
-| 대화 맥락 | 현재 티켓의 고객 글 + 기존 답변 최근 5개 | - |
+| 대화 맥락 | 현재 티켓 제목·본문 + **공개** 답변 최근 5개(`is_internal = false`, 내부 메모 제외), 프롬프트에는 시간순 | 최대 5 |
+
+> 대화 맥락·담당자 조회는 `DraftContextRepository` 가 docs/02 §5 읽기 전용 예외로 `ticket(agent_id)`·`ticket_reply(ticket_id, writer_type, content, is_internal, created_at)` 를 SQL 로 읽는다(엔티티 import 없음).
 
 > 확장(선택): pgvector 임베딩 검색. MVP에서는 키워드/유형 기반으로 충분.
 
@@ -86,7 +88,9 @@ domain/ai/service/ClassifyService, DraftService
 - FAQ#{id}: Q {question} / A {answer}
 - 과거답변#{id}: {content}
 ```
-- 응답 저장: AI_DRAFT(`reference_refs`에 사용한 FAQ/답변 ID) → 화면에 참고 자료 링크 표시
+- 응답 형식: LLM 은 JSON `{"content": "..."}` 하나만 반환(`DraftResult`). 마스킹·4,000자 절단·타임아웃은 §2 `SpringAiLlmClient` 가 처리
+- 응답 저장: AI_DRAFT(`content`, `model`, `requested_by`, `reference_refs`) → 화면에 참고 자료 목록 표시
+  - `references` = `[{type: "FAQ"|"REPLY", id, label}]`. label 은 FAQ 질문 / 과거 답변 본문, 공백 정리 후 앞 40자(넘으면 `…`)
 - 상담원이 발송하면 티켓 서비스(박민재)가 `ticket_reply.ai_draft_id` 기록 → 초안 활용률 계산
 
 ### 4.3 프론트 컴포넌트 (신수진 소유, 박민재 페이지에서 사용)
@@ -94,6 +98,15 @@ domain/ai/service/ClassifyService, DraftService
 |---|---|---|
 | `AiAnalysisPanel` | `ticketId` | 유형/긴급도/감정 배지, 요약, 신뢰도, 재분류 버튼 |
 | `AiDraftButton` | `ticketId`, `onInsert(text, draftId)` | 초안 생성 → 미리보기 모달 → "에디터에 삽입" 클릭 시 `onInsert` 호출 |
+
+### 4.4 처리 규칙 (`DraftService`)
+| 단계 | 규칙 | 실패 |
+|---|---|---|
+| 티켓 확인 | `TicketQueryPort.getTicketSummary` | 없으면 404 `TICKET_NOT_FOUND` |
+| 담당 검증 | 요청자가 AGENT 면 `ticket.agent_id == 본인` 이어야 함. LEAD·ADMIN 은 검증 없음 | 403 `AI_NOT_ASSIGNEE` |
+| 감정 | `TICKET_AI_RESULT.sentiment`, 결과 없으면 `NEUTRAL` | - |
+| LLM 호출 | 트랜잭션 밖 동기 호출(상담원이 기다림). 빈 응답도 실패로 본다 | 503 `AI_PROVIDER_UNAVAILABLE` — 분류와 달리 fallback 없음, 저장 안 함 |
+| 목록 | `GET .../ai/drafts` — 해당 티켓 초안 최신순(담당 검증 없음, AGENT+) | - |
 
 ## 5. AI-3 결과 메일
 | 항목 | 내용 |
