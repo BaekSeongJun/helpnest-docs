@@ -101,11 +101,14 @@ flowchart LR
 - [x] `applyClassification` 구현 + **최소 부하 자동 배정**(비관적 락) + 수동/재배정
 
 ### S2 (10/9 ~ 10/14)
-- [ ] WebSocket/STOMP 설정 + JWT 인터셉터, `stompClient.ts`
-- [ ] NOTIFICATION 저장 + `/user/queue/notifications` 푸시, `NotificationBell` (백성준이 Header 배치)
-- [ ] SLA 스케줄러(임박 80%/초과), 목록 SLA 배지, SLA 정책 관리 화면
+- [x] WebSocket/STOMP 설정 + JWT 인터셉터 (`WebSocketConfig`, `StompAuthInterceptor`)
+- [ ] 프론트 `stompClient.ts`
+- [x] NOTIFICATION 저장 + `/user/queue/notifications` 푸시
+- [ ] `NotificationBell` — `notification-bell-slot.tsx` 에 자리만 있다(백성준이 Header 배치 완료)
+- [x] SLA 스케줄러(임박 80%/초과), 목록 SLA 배지
+- [ ] SLA 정책 관리 화면(AD-04) — API 는 back #81
 - [ ] 자동 종료 스케줄러(RESOLVED 72h) + `SurveySubmittedEvent` → CLOSED
-- [ ] **고객 답변 알림**: 공개 답변 → 회원 웹 알림(`AGENT_REPLY`) + `MailSender.sendAgentReplyMail` 호출(10분 묶음)
+- [x] **고객 답변 알림**: 공개 답변 → 회원 웹 알림(`AGENT_REPLY`) + `MailSender.sendAgentReplyMail` 호출(10분 묶음)
 - [ ] `TicketGuestPort` 구현 (비회원 조회 비밀번호 재설정용)
 - [ ] 티켓 상세에 신수진·백성준 컴포넌트 통합(AiAnalysisPanel, AiDraftButton, TemplatePicker)
 
