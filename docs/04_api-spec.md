@@ -199,14 +199,14 @@
 - `AgentStat` = `{agentId, name, assignedCount, inProgressCount, resolvedToday, avgFirstResponseMin, avgResolveHour, slaBreachRate, avgRating}`
 - 단위: `slaBreachRate` 0~100(%, 소수 1자리), `avgFirstResponseMin` 분(소수 1자리), `avgResolveHour` 시간(소수 2자리)
 - 비율·평균은 대상 티켓이 없으면 `null`(0 아님) → 화면은 `-`
-- `avgRating` 은 현재 항상 `null`: 설문(SURVEY, 백성준) 테이블 머지 후 LEFT JOIN 으로 채운다
+- `avgRating` = 기간 내 접수 티켓 중 **응답된 설문**(`survey.rating` not null)의 평균, 소수 1자리(5점 만점), 응답 없으면 `null`. 상담원별은 `ticket.agent_id` 기준. ※ 설문 결과 API(위 설문 절)는 **발송일(`sent_at`) 기준**이라 같은 기간이라도 값이 다를 수 있다
 - `byStatus`·`byCategory`: `{코드: 건수}`, 건수 많은 순
 - AGENT 가 `summary`·`agents`·`agents/export` 호출 시 403 (FR-DSH-03)
 
 **월간 리포트 응답 규칙**
 - `month`: `YYYY-MM`, 생략 시 서울 기준 이번 달, 형식 오류 400. 대상은 그 달 **[서울 월초, 다음 달 월초)** 에 접수된 티켓
 - `prevTotal`·`prevCount` = 전월 같은 기준 건수. `byCategory` 는 이번 달 유형(많은 순) 뒤에 **전월에만 있던 유형**을 `count=0`, 지표 `null` 로 붙인다
-- `negativeRate` = `sentiment = NEGATIVE` 비율. 비율 0~100(소수 1자리), 대상 없으면 비율·평균 `null`. `avgRating` 은 대시보드와 같은 이유로 `null`
+- `negativeRate` = `sentiment = NEGATIVE` 비율. 비율 0~100(소수 1자리), 대상 없으면 비율·평균 `null`. `avgRating` 은 대시보드와 같은 규칙(그 달 접수 티켓의 응답된 설문 평균)
 
 **CSV 형식 (FR-RPT-02)**
 - `text/csv;charset=UTF-8`, 본문 앞 **BOM(EF BB BF)** — 엑셀에서 한글 정상. 줄바꿈 CRLF, 첫 줄은 한글 헤더
