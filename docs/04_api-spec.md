@@ -181,9 +181,10 @@
 | GET | `/api/dashboard/summary` | LEAD+ | `?period=TODAY\|7D\|30D` → `{total, unassigned, slaBreachRate, avgFirstResponseMin, avgRating, byStatus{}, byCategory{}}` |
 | GET | `/api/dashboard/agents` | LEAD+ | `?period=` → 활성 AGENT 전원 `[AgentStat]` (티켓 0건도 포함, 이름순) |
 | GET | `/api/dashboard/agents/me` | AGENT+ | `?period=` → 본인 `AgentStat` 1행 |
-| GET | `/api/reports/monthly` | LEAD+ | `?month=2026-10` 유형별 리포트 + 전월 대비 |
-| GET | `/api/reports/monthly/export` | LEAD+ | `?month=2026-10` → `text/csv` (UTF-8 BOM), `Content-Disposition: attachment; filename=helpnest_report_2026-10.csv` |
-| GET | `/api/dashboard/agents/export` | LEAD+ | `?period=` 상담원별 처리현황 CSV |
+| GET | `/api/reports/monthly` | LEAD+ | `?month=2026-10` → `{month, total, prevTotal, avgFirstResponseMin, avgResolveHour, slaBreachRate, negativeRate, avgRating, byCategory[{category, count, prevCount, avgResolveHour, negativeRate}]}` |
+| GET | `/api/reports/monthly/export` | LEAD+ | `?month=2026-10` → CSV `helpnest_report_2026-10.csv` |
+| GET | `/api/dashboard/agents/export` | LEAD+ | `?period=` → CSV `helpnest_agents_{period}_{서울 yyyyMMdd}.csv` |
+| GET | `/actuator/health` | 공개 | 배포 헬스체크 |
 
 **대시보드 응답 규칙**
 - `period`: 생략 시 `TODAY`, 그 외 값은 400. 기준 시각 Asia/Seoul — `TODAY` = 오늘 0시~현재, `7D`/`30D` = 현재-n일~현재
@@ -193,5 +194,17 @@
 - 비율·평균은 대상 티켓이 없으면 `null`(0 아님) → 화면은 `-`
 - `avgRating` 은 현재 항상 `null`: 설문(SURVEY, 백성준) 테이블 머지 후 LEFT JOIN 으로 채운다
 - `byStatus`·`byCategory`: `{코드: 건수}`, 건수 많은 순
-- AGENT 가 `summary`·`agents` 호출 시 403 (FR-DSH-03)
-| GET | `/actuator/health` | 공개 | 배포 헬스체크 |
+- AGENT 가 `summary`·`agents`·`agents/export` 호출 시 403 (FR-DSH-03)
+
+**월간 리포트 응답 규칙**
+- `month`: `YYYY-MM`, 생략 시 서울 기준 이번 달, 형식 오류 400. 대상은 그 달 **[서울 월초, 다음 달 월초)** 에 접수된 티켓
+- `prevTotal`·`prevCount` = 전월 같은 기준 건수. `byCategory` 는 이번 달 유형(많은 순) 뒤에 **전월에만 있던 유형**을 `count=0`, 지표 `null` 로 붙인다
+- `negativeRate` = `sentiment = NEGATIVE` 비율. 비율 0~100(소수 1자리), 대상 없으면 비율·평균 `null`. `avgRating` 은 대시보드와 같은 이유로 `null`
+
+**CSV 형식 (FR-RPT-02)**
+- `text/csv;charset=UTF-8`, 본문 앞 **BOM(EF BB BF)** — 엑셀에서 한글 정상. 줄바꿈 CRLF, 첫 줄은 한글 헤더
+- 리포트 열: `유형, 건수, 전월 건수, 증감률(%), 평균 처리시간(시간), 불만 비율(%)` — 유형은 한글 라벨, 마지막에 **합계** 행. 증감률은 전월 0 이면 빈 칸
+- 상담원 열: `상담원, 배정, 처리중, 오늘 해결, 평균 첫 응답(분), 평균 해결(시간), SLA 위반율(%), 평균 만족도`
+- `null` 은 빈 칸. 쉼표·따옴표·개행이 있는 셀은 `"..."` 로 감싸고 `"` 는 `""`
+- **수식 주입 방지**: 문자열 셀이 `= + - @ 탭 CR` 로 시작하면 앞에 `'` 를 붙인다(숫자 셀은 그대로라 음수 증감률도 숫자)
+- 파일명은 `Content-Disposition: attachment` 로 내려가지만, 프론트는 같은 규칙으로 직접 만든다(헤더 노출용 CORS 설정 불필요)

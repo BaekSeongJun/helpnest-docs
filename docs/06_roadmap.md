@@ -129,7 +129,7 @@ flowchart LR
 - [x] `FileStorage`(LocalFileStorage), `MailSender`(LogMailSender), `LlmClient`(MockLlmClient) 인터페이스 + 로컬 구현
 - [x] TICKET_AI_RESULT, AI_DRAFT, MAIL_LOG 마이그레이션 + 엔티티, `AiResultPort` 스텁
 - [x] Spring AI 2.0.1 의존성 추가 요청(CR → 백성준, `spring-ai-bom`), LLM 제공자 후보 비교·선택(PRD Q11) → 팀 공유 후 개발용 키 발급 — **Gemini** 선택, 개발용 키 발급 완료
-- [x] AWS 계정/IAM 준비, **SES 샌드박스 해제 요청 또는 테스트 수신자 검증 시작** — SES 도메인 `helpnest.kro.kr` 인증, 프로덕션 액세스 요청(심사 중)
+- [x] AWS 계정/IAM 준비, **SES 샌드박스 해제 요청 또는 테스트 수신자 검증 시작** — SES 도메인 `helpnest.kro.kr` 인증, 프로덕션 액세스 요청 → 승인됨(10/6 확인)
 - [x] CloudFront(PRD Q20 ③) 구성 사전 테스트 — 임시 EC2 + CloudFront로 HTTPS API·WSS 연결 확인 (배포 주에 막히지 않도록) — HTTPS 200·WSS 101 확인, 임시 자원 삭제
 
 ### S1 (10/2 ~ 10/8)
@@ -142,12 +142,12 @@ flowchart LR
 - [x] AI-2 답변 초안(FAQ·과거 답변 검색 + 프롬프트) API + `AiDraftButton` (back #55, front #22, 05 §4.4)
 - [x] AI-3 결과 메일 템플릿 + MAIL_LOG + 재시도 스케줄러 (back #50·#51·#53, docs #31)
 - [x] 메일 추가: `sendAgentReplyMail`, `sendPasswordResetMail` (회원·비회원 공용 템플릿) (back #50·#51)
-- [ ] 대시보드 API(요약·상담원별·본인) + 대시보드 페이지(KPI 카드, 분포 차트, 상담원 표) — API back #57 머지, 페이지 front #26 리뷰 중
+- [x] 대시보드 API(요약·상담원별·본인) + 대시보드 페이지(KPI 카드, 분포 차트, 상담원 표) (back #57, front #26)
 
 ### S3 (10/15 ~ 10/18)
-- [ ] 월간 리포트 API + 페이지(유형별 건수·전월 대비·처리시간·SLA·만족도·불만 비율)
-- [ ] 리포트·상담원 처리현황 **CSV 다운로드**(UTF-8 BOM)
-- [ ] `S3FileStorage`, `SesMailSender` 구현(prod 프로필) + 로컬에서 실제 AWS 연결 테스트
+- [x] 월간 리포트 API + 페이지(유형별 건수·전월 대비·처리시간·SLA·만족도·불만 비율) (back #63, front #28) — 만족도는 설문 테이블 머지 후
+- [x] 리포트·상담원 처리현황 **CSV 다운로드**(UTF-8 BOM, 수식 주입 방지) (back #65, front #28)
+- [x] `S3FileStorage`, `SesMailTransport` 구현(prod 프로필) + 로컬에서 실제 AWS 연결 테스트 (CR back #60→#64, back #69, `AwsLiveTest` 2/2)
 
 ### S4 (10/19 ~ 10/21)
 - [ ] RDS 생성 + Flyway 적용, EC2 백엔드 배포 + CloudFront(HTTPS/WSS, PRD Q20), 환경변수/비밀값 설정
