@@ -71,7 +71,7 @@ flowchart LR
 - [x] PASSWORD_RESET_TOKEN + 비밀번호 찾기/재설정, 비밀번호 변경·내 정보 수정 (CM-03·04, CU-10)
 - [x] 비회원 조회 비밀번호 재설정 (CU-06, 박민재 `TicketGuestPort` 사용)
 - [x] 설문 결과 조회 API + 화면 (CS-06)
-- [x] 권한별 메뉴/접근 통합 점검 — back `RoleAccessMatrixTest`(6종 × 24개 엔드포인트 = 144건)로 04 권한 열과 대조, 역할별 직접 URL 접근·메뉴를 09 권한표와 대조(일치). 남은 항목: ① `GET /api/tickets/my` 가 CUSTOMER 전용이 아님(박민재 CR) ② 메뉴에는 있으나 페이지·API 가 아직 없는 `/chat`·`/console/chat`·`/admin/sla`(박민재 S2) — 구현되면 `matrix()` 에 행 추가
+- [x] 권한별 메뉴/접근 통합 점검 — back `RoleAccessMatrixTest`(6종 × 28개 엔드포인트 = 168건)로 04 권한 열과 대조, 역할별 직접 URL 접근·메뉴를 09 권한표와 대조(일치). 04 와의 어긋남은 없다(`GET /api/tickets/my` CUSTOMER 한정은 back #79 로 해소). 남은 항목: 메뉴에는 있으나 페이지·API 가 아직 없는 `/chat`·`/console/chat`·`/admin/sla`(박민재 S2) — 구현되면 `matrix()` 에 행 추가
 
 ### S3 (10/15 ~ 10/18)
 - [ ] 고객 이력 묶음 API + `CustomerHistoryPanel` 컴포넌트, 고객 이력 페이지
