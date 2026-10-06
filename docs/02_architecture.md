@@ -10,7 +10,7 @@
 | 상태/통신 | fetch 래퍼(`lib/api/client.ts`, 기본 경로 상대 `/api`) + JWT 자동 재발급 (Access 메모리 / Refresh httpOnly 쿠키) | 백성준 |
 | API 프록시 | `next.config.ts`의 `rewrites`: `/api/:path*` → `${BACKEND_ORIGIN}/api/:path*` (§2.1) | 백성준 |
 | 실시간 | `@stomp/stompjs` | 박민재 |
-| 차트 | Recharts 등 (신수진이 선택 후 백성준에게 의존성 CR) | 신수진 |
+| 차트 | 라이브러리 없음 — CSS 막대(`components/dashboard/DistributionBars`) | 신수진 |
 | Back | Spring Boot **4.1.1** / Java 21 / **Maven** | 백성준 초기 세팅 |
 | 보안 | Spring Security + JWT(Access 30분 / Refresh 14일) | 백성준 |
 | ORM | Spring Data JPA (+ 통계는 JPQL/Native Query) | 각 도메인 소유자 |
