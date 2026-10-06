@@ -116,7 +116,7 @@ domain/ai/service/ClassifyService, DraftService
 | 제목 | `[HelpNest] 문의({ticketNo})가 해결되었습니다` |
 | 본문 | 고객명, 문의 제목, 최종 답변 요약, 설문 버튼(`{FRONT_ORIGIN}/survey/{token}`), 설문 만료 시각 |
 | 요약 | 호출자는 `ResolvedMailCommand.finalReply`(최종 공개 답변 원문)만 넘긴다. `MailSender` 가 LLM 1문장 요약, 실패·빈값이면 앞 200자 |
-| 구현 | `DefaultMailSender`(렌더링 `MailTemplates` → 전송 `MailTransport` → MAIL_LOG 저장). 전송: `local` `LogMailTransport`(콘솔 + `LOGGED`) / `prod` SES(S3) |
+| 구현 | `DefaultMailSender`(렌더링 `MailTemplates` → 전송 `MailTransport` → MAIL_LOG 저장). 전송: `local` `LogMailTransport`(콘솔 + `LOGGED`) / `prod` `SesMailTransport`(SESv2 SendEmail, HTML·UTF-8, 발신 `SES_FROM_EMAIL` → `SENT`, 실패는 예외 → `FAILED`) |
 | 실패 | 호출자에 예외 전파 없음. MAIL_LOG `FAILED` → `MailRetryScheduler` 가 저장된 제목·본문을 5분 간격 최대 3회 재전송 (`app.mail.retry-delay`) |
 
 ### 5.1 기타 메일 (같은 `MailSender`, 신수진 구현)

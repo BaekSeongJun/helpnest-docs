@@ -121,7 +121,7 @@ src/
 │  ├─ notification/ NotificationBell    (박민재)
 │  ├─ chat/    ChatWindow               (박민재)
 │  ├─ ai/      AiAnalysisPanel, AiDraftButton (신수진)
-│  └─ dashboard/ KpiCard, AgentTable, Charts (신수진)
+│  └─ dashboard/ KpiCard, DistributionBars(CSS 막대), AgentTable, CsvButton (신수진)
 ├─ lib/
 │  ├─ api/client.ts                    (백성준) 공통 fetch + 토큰 재발급
 │  ├─ api/{auth,faq,template,survey,attachment,customer}.ts (백성준)
@@ -170,9 +170,10 @@ com.helpnest
 │  ├─ ticket/, assignment/, sla/, notification/, chat/                  (박민재)
 │  └─ ai/, dashboard/, report/                                          (신수진)
 └─ infra/                                   (신수진)
-   ├─ storage/ FileStorage(interface), LocalFileStorage, S3FileStorage
-   ├─ mail/    MailSender(interface), LogMailSender, SesMailSender
-   └─ llm/     LlmClient(interface), SpringAiLlmClient
+   ├─ storage/ FileStorage(interface), LocalFileStorage(!prod), S3FileStorage(prod)
+   ├─ mail/    MailSender(interface) → DefaultMailSender(MailTemplates·MAIL_LOG) → MailTransport: LogMailTransport(!prod), SesMailTransport(prod)
+   ├─ llm/     LlmClient(interface), MockLlmClient(mock), SpringAiLlmClient
+   └─ aws/     AwsConfig(prod) — S3Client·S3Presigner·SesV2Client, 자격 증명은 SDK 기본 체인(EC2 IAM Role)
 ```
 - 도메인 내부 구조: `controller / service / repository / entity / dto / event / port`
 - **인증 예외 경로(permitAll)** 는 `SecurityConfig`(백성준)에서 [04 API 명세](04_api-spec.md)의 권한 열이 "공개"인 엔드포인트 + `/ws/**`(STOMP 인증은 `StompAuthInterceptor`가 담당) + `/actuator/health` 기준으로 관리한다. 새 공개 API가 생기면 API 명세 PR과 함께 백성준에게 CR.
@@ -203,7 +204,7 @@ com.helpnest
 | `AttachmentPort` | 백성준 | 박민재 | `linkToTicket(List<attachmentId>, ticketId, replyId)` |
 | `FaqQueryPort` | 백성준 | 신수진 | `findPublishedByCategory(category, keyword, limit)` |
 | `MailSender` | 신수진 | 백성준, 박민재 | `sendResolvedMail(ResolvedMailCommand)` (고객명, 이메일, 티켓번호, 답변 요약, 설문 링크) / `sendAgentReplyMail(AgentReplyMailCommand)`(박민재) / `sendPasswordResetMail(PasswordResetMailCommand)`(백성준, 회원·비회원 공용) |
-| `FileStorage` | 신수진 | 백성준 | `upload(MultipartFile, keyPrefix)`, `getDownloadUrl(key)`, `delete(key)` |
+| `FileStorage` | 신수진 | 백성준 | `upload(MultipartFile, keyPrefix)` → key(`keyPrefix/UUID.ext`), `getDownloadUrl(key)`(prod presigned GET 10분 / local `null`), `load(key)`(local 스트림 전용), `delete(key)` |
 | `AiResultPort` | 신수진 | 박민재 | `markOverridden(ticketId, memberId, category, priority)` (상담원 수동 분류 수정 기록) |
 | `NotificationPort` | 박민재 | 백성준, 신수진 | `notify(receiverId, type, ticketId, message)` |
 | `TicketGuestPort` | 박민재 | 백성준 | `verifyGuest(ticketNo, email)` → ticketId, `findGuestPasswordHash(ticketId)` → BCrypt 해시, `updateGuestPassword(ticketId, passwordHash)` (비회원 로그인·조회 비밀번호 재설정). 세 메서드 모두 없으면 예외가 아니라 null — 존재 여부가 응답으로 드러나면 계정 열거가 된다. BCrypt 비교·해싱은 호출자(백성준) 책임이라 원문 비밀번호는 경계를 넘지 않는다 |
@@ -291,8 +292,10 @@ volumes:
 | 자원 | 용도 | 체크 |
 |---|---|---|
 | RDS PostgreSQL | 운영 DB | 로컬 Flyway 스크립트로 스키마 생성 |
-| S3 | 첨부 (Private + Presigned URL) | 버킷 정책, CORS |
-| SES | 결과/설문 메일 | **샌드박스 해제 요청 또는 수신자 이메일 검증을 Sprint 1에 미리 진행** |
+| S3 | 첨부 (Private + Presigned URL) | 버킷 정책(퍼블릭 차단), **CORS**: 프론트가 presigned URL 을 `fetch` 로 받으므로 Amplify 도메인 `GET` 허용. 버킷 이름은 `helpnest-` 로 시작 |
+| SES | 결과/설문 메일 | 도메인 `helpnest.kro.kr` 인증(Easy DKIM), **프로덕션 액세스 승인됨**(샌드박스 해제, 10/6 확인). 발신 `SES_FROM_EMAIL=no-reply@helpnest.kro.kr` |
+| IAM | EC2 인스턴스 Role | `s3:PutObject/GetObject/DeleteObject`(운영 버킷 한정), `ses:SendEmail`. 앱은 키 없이 SDK 기본 체인으로 Role 사용 |
+| 연결 확인 | 배포 전후 | `AWS_LIVE=true AWS_PROFILE=<프로필> SES_FROM_EMAIL=… SES_TEST_TO=… ./mvnw test -Dtest=AwsLiveTest` — 임시 버킷 왕복(생성·업로드·presigned GET·삭제) + SES 1통. 10/6 로컬 2/2 통과 |
 | EC2 | Spring Boot 백엔드 (8080) | **CloudFront 뒤에 배치**(PRD Q20). 보안그룹은 CloudFront 관리형 prefix list(`com.amazonaws.global.cloudfront.origin-facing`)만 8080 허용 |
 | **CloudFront** | 백엔드 HTTPS·WSS 제공 (도메인 없이 `*.cloudfront.net` 인증서 사용) | Origin: EC2 **퍼블릭 DNS**(IP 불가), Origin protocol HTTP 8080 / Viewer protocol **HTTPS only**. Behavior `/api/*`: 캐시 정책 **CachingDisabled**, 오리진 요청 정책 **AllViewerExceptHostHeader**, 허용 메서드 GET~DELETE 전체. Behavior `/ws*`: CachingDisabled + WebSocket 헤더 전달(`Sec-WebSocket-Key/Version/Protocol/Extensions`, AllViewer 정책이면 자동) / 프론트 환경변수는 §7 참고 |
 | **Amplify Hosting** | Next.js 프론트 (PRD Q9) | GitHub `helpnest-front`의 `main` 연결 → main 머지 시 자동 배포. **GitHub 연동 승인은 repo 소유자 백성준 계정으로** 진행. 환경변수 `BACKEND_ORIGIN`(CloudFront https), `NEXT_PUBLIC_UPLOAD_BASE_URL`, `NEXT_PUBLIC_WS_URL`(wss) 등록. 백엔드 `FRONT_ORIGIN`(CORS·메일 링크)에 Amplify 도메인 설정 |
