@@ -172,16 +172,26 @@
 |---|---|---|---|
 | GET | `/api/console/tickets/{id}/ai` | AGENT+ | 분류 결과 `{category, urgency, sentiment, summary, confidence, status}` |
 | POST | `/api/console/tickets/{id}/ai/classify` | AGENT+ | 재분류 (동기, 타임아웃 10초) |
-| POST | `/api/console/tickets/{id}/ai/drafts` | 담당 AGENT, LEAD+ | 초안 생성 → `{draftId, content, references[]}` |
-| GET | `/api/console/tickets/{id}/ai/drafts` | AGENT+ | 초안 목록 |
+| POST | `/api/console/tickets/{id}/ai/drafts` | 담당 AGENT, LEAD+ | 초안 생성(동기) → `{draftId, content, references[{type: FAQ\|REPLY, id, label}], model, createdAt}`. 담당 아님 403 `AI_NOT_ASSIGNEE`, LLM 실패 503 `AI_PROVIDER_UNAVAILABLE` (docs/05 §4.4) |
+| GET | `/api/console/tickets/{id}/ai/drafts` | AGENT+ | 초안 목록(최신순), 항목 형식은 POST 응답과 같음 |
 
 ## 13. 대시보드 · 리포트 (신수진)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| GET | `/api/dashboard/summary` | LEAD+ | `?period=TODAY\|7D\|30D` KPI(전체/미배정/SLA위반율/평균응답/평균만족도) + 상태·유형 분포 |
-| GET | `/api/dashboard/agents` | LEAD+ | 상담원별 처리현황 |
-| GET | `/api/dashboard/agents/me` | AGENT | 본인 처리현황 |
+| GET | `/api/dashboard/summary` | LEAD+ | `?period=TODAY\|7D\|30D` → `{total, unassigned, slaBreachRate, avgFirstResponseMin, avgRating, byStatus{}, byCategory{}}` |
+| GET | `/api/dashboard/agents` | LEAD+ | `?period=` → 활성 AGENT 전원 `[AgentStat]` (티켓 0건도 포함, 이름순) |
+| GET | `/api/dashboard/agents/me` | AGENT+ | `?period=` → 본인 `AgentStat` 1행 |
 | GET | `/api/reports/monthly` | LEAD+ | `?month=2026-10` 유형별 리포트 + 전월 대비 |
 | GET | `/api/reports/monthly/export` | LEAD+ | `?month=2026-10` → `text/csv` (UTF-8 BOM), `Content-Disposition: attachment; filename=helpnest_report_2026-10.csv` |
 | GET | `/api/dashboard/agents/export` | LEAD+ | `?period=` 상담원별 처리현황 CSV |
+
+**대시보드 응답 규칙**
+- `period`: 생략 시 `TODAY`, 그 외 값은 400. 기준 시각 Asia/Seoul — `TODAY` = 오늘 0시~현재, `7D`/`30D` = 현재-n일~현재
+- 집계 대상은 **기간 내 접수(created_at)된 티켓**. 예외: `unassigned`(미배정·미종료, 기간 무관), `assignedCount`·`inProgressCount`(현재 담당 중), `resolvedToday`(오늘 해결)
+- `AgentStat` = `{agentId, name, assignedCount, inProgressCount, resolvedToday, avgFirstResponseMin, avgResolveHour, slaBreachRate, avgRating}`
+- 단위: `slaBreachRate` 0~100(%, 소수 1자리), `avgFirstResponseMin` 분(소수 1자리), `avgResolveHour` 시간(소수 2자리)
+- 비율·평균은 대상 티켓이 없으면 `null`(0 아님) → 화면은 `-`
+- `avgRating` 은 현재 항상 `null`: 설문(SURVEY, 백성준) 테이블 머지 후 LEFT JOIN 으로 채운다
+- `byStatus`·`byCategory`: `{코드: 건수}`, 건수 많은 순
+- AGENT 가 `summary`·`agents` 호출 시 403 (FR-DSH-03)
 | GET | `/actuator/health` | 공개 | 배포 헬스체크 |
