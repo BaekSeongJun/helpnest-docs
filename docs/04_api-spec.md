@@ -94,8 +94,15 @@
 ## 6. 고객 이력 묶음 (백성준)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| GET | `/api/console/customers/by-ticket/{ticketId}` | AGENT+ | 해당 티켓 고객의 과거 문의 목록 + 요약(총 건수, 평균 만족도) |
-| GET | `/api/console/customers/{customerKey}/tickets` | AGENT+ | `customerKey` = `M-{memberId}` 또는 `G-{email}` |
+| GET | `/api/console/customers/by-ticket/{ticketId}` | AGENT+ | `?page=&size=`(기본 **5건**) → 해당 티켓 고객의 과거 문의 목록 + 요약. **지금 보는 티켓은 목록에서 빠진다**(CS-02 패널용). 없는 티켓 `404 TICKET_NOT_FOUND` |
+| GET | `/api/console/customers/{customerKey}/tickets` | AGENT+ | `?page=&size=`(기본 **20건**) → 고객의 전체 문의 목록 + 요약(CS-07용). `customerKey` = `M-{memberId}` 또는 `G-{email}`. 형식이 틀리면 `400 COMMON_INVALID_INPUT` |
+
+> - **응답(두 엔드포인트 공통)**: `{customerKey, customerName, summary{totalCount, avgRating, lastTicketAt}, tickets}`. `tickets` 는 페이지 형식이며 행은 `{ticketId, ticketNo, title, status, category, createdAt, rating}`, 최근 접수순.
+> - **묶음 기준**: 회원은 `customer_id`, 비회원은 이메일이다. 비회원 이메일은 **대소문자를 무시**한다(`History@Example.com` 과 `history@example.com` 은 같은 고객). 회원 티켓과 같은 이메일의 비회원 티켓은 묶지 않는다.
+> - **요약 단위**: `totalCount` 는 **지금 보는 티켓까지 포함한 전체 건수**라서 `by-ticket` 에서는 목록 건수보다 1 클 수 있다. `avgRating` 은 제출된 별점만으로 계산한 소수 1자리(5점 만점)이고 응답이 없으면 `null`. `lastTicketAt` 은 티켓이 없으면 `null`. `rating`(행)은 설문 미응답이면 `null`.
+> - **없는 고객**: 형식이 맞는 `customerKey` 가 가리키는 티켓이 하나도 없으면 404 가 아니라 **200 + 0건**(`totalCount` 0, `avgRating`·`lastTicketAt` `null`, `customerName` `null`). 404 는 `by-ticket` 의 없는 티켓에만 쓴다.
+> - **개인정보**: 비회원 이메일은 응답 본문에 싣지 않는다(`customerKey` 에만 있다). `customerName` 은 회원 이름 또는 비회원 이름.
+> - **읽기 전용**: 이 API 는 박민재 `ticket`·`member`, 백성준 `survey` 를 읽기 전용 네이티브 쿼리로 JOIN 한다([02 §5](02_architecture.md) 읽기 전용 예외). 참조 컬럼 — `ticket(ticket_id, ticket_no, title, status, category, customer_id, guest_name, guest_email, created_at)`, `member(member_id, name)`, `survey(ticket_id, rating, submitted_at)`. 이 컬럼을 바꾸면 이 API 도 같이 고친다.
 
 ---
 
