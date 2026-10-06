@@ -64,14 +64,14 @@ flowchart LR
 - [x] FAQ 고객 페이지 + 관리 CRUD
 
 ### S2 (10/9 ~ 10/14)
-- [ ] 템플릿 CRUD + `TemplatePicker` 컴포넌트 (박민재에 전달)
-- [ ] `SurveyListener`(RESOLVED) → 설문 생성 → 신수진 `MailSender` 호출, 재문의 시 설문 만료·재해결 시 재발급(FR-SRV-06)
-- [ ] 설문 페이지 + 제출 → `SurveySubmittedEvent`
-- [ ] 접수 폼 FAQ 추천
-- [ ] PASSWORD_RESET_TOKEN + 비밀번호 찾기/재설정, 비밀번호 변경·내 정보 수정 (CM-03·04, CU-10)
-- [ ] 비회원 조회 비밀번호 재설정 (CU-06, 박민재 `TicketGuestPort` 사용)
-- [ ] 설문 결과 조회 API + 화면 (CS-06)
-- [ ] 권한별 메뉴/접근 통합 점검
+- [x] 템플릿 CRUD + `TemplatePicker` 컴포넌트 (박민재에 전달)
+- [x] `SurveyListener`(RESOLVED) → 설문 생성 → 신수진 `MailSender` 호출, 재문의 시 설문 만료·재해결 시 재발급(FR-SRV-06)
+- [x] 설문 페이지 + 제출 → `SurveySubmittedEvent` (※ 구독자 박민재 `TicketCloseListener` 머지 후 "제출 → CLOSED" E2E 확인 필요)
+- [x] 접수 폼 FAQ 추천
+- [x] PASSWORD_RESET_TOKEN + 비밀번호 찾기/재설정, 비밀번호 변경·내 정보 수정 (CM-03·04, CU-10)
+- [x] 비회원 조회 비밀번호 재설정 (CU-06, 박민재 `TicketGuestPort` 사용)
+- [x] 설문 결과 조회 API + 화면 (CS-06)
+- [x] 권한별 메뉴/접근 통합 점검 — back `RoleAccessMatrixTest`(6종 × 28개 엔드포인트 = 168건)로 04 권한 열과 대조, 역할별 직접 URL 접근·메뉴를 09 권한표와 대조(일치). 04 와의 어긋남은 없다(`GET /api/tickets/my` CUSTOMER 한정은 back #79 로 해소). 남은 항목: 메뉴에는 있으나 페이지·API 가 아직 없는 `/chat`·`/console/chat`·`/admin/sla`(박민재 S2) — 구현되면 `matrix()` 에 행 추가
 
 ### S3 (10/15 ~ 10/18)
 - [ ] 고객 이력 묶음 API + `CustomerHistoryPanel` 컴포넌트, 고객 이력 페이지
@@ -101,13 +101,16 @@ flowchart LR
 - [x] `applyClassification` 구현 + **최소 부하 자동 배정**(비관적 락) + 수동/재배정
 
 ### S2 (10/9 ~ 10/14)
-- [ ] WebSocket/STOMP 설정 + JWT 인터셉터, `stompClient.ts`
-- [ ] NOTIFICATION 저장 + `/user/queue/notifications` 푸시, `NotificationBell` (백성준이 Header 배치)
-- [ ] SLA 스케줄러(임박 80%/초과), 목록 SLA 배지, SLA 정책 관리 화면
-- [ ] 자동 종료 스케줄러(RESOLVED 72h) + `SurveySubmittedEvent` → CLOSED
-- [ ] **고객 답변 알림**: 공개 답변 → 회원 웹 알림(`AGENT_REPLY`) + `MailSender.sendAgentReplyMail` 호출(10분 묶음)
-- [ ] `TicketGuestPort` 구현 (비회원 조회 비밀번호 재설정용)
-- [ ] 티켓 상세에 신수진·백성준 컴포넌트 통합(AiAnalysisPanel, AiDraftButton, TemplatePicker)
+- [x] WebSocket/STOMP 설정 + JWT 인터셉터 (`WebSocketConfig`, `StompAuthInterceptor`)
+- [x] 프론트 `stompClient.ts` — 탭당 소켓 하나 공유, 재연결 시 구독 복구, 토큰은 getter 주입 (front #35)
+- [x] NOTIFICATION 저장 + `/user/queue/notifications` 푸시
+- [x] `NotificationBell` (CS-08) — 미읽음 배지·최근 20건·모두 읽음, 실시간 푸시 (front #35·#38), 슬롯 연결은 CR #34
+- [x] SLA 스케줄러(임박 80%/초과), 목록 SLA 배지
+- [x] SLA 정책 관리 화면(AD-04) — 행 내 편집, 임박 시점은 서버 계산값만 표시, 수정은 ADMIN 만 (front #36, API 는 back #81)
+- [x] 자동 종료 스케줄러(RESOLVED 72h) + `SurveySubmittedEvent` → CLOSED — `AutoCloseScheduler`(10분 주기) + `TicketCloseListener`, 두 경로 모두 `TicketService.changeStatus` 를 거쳐 이력·알림이 같게 남는다
+- [x] **고객 답변 알림**: 공개 답변 → 회원 웹 알림(`AGENT_REPLY`) + `MailSender.sendAgentReplyMail` 호출(10분 묶음)
+- [x] `TicketGuestPort` 구현 (비회원 조회 비밀번호 재설정용) — `TicketGuestAdapter`, S2 중 완료됐으나 체크가 누락돼 있었다
+- [x] 티켓 상세에 신수진·백성준 컴포넌트 통합(AiAnalysisPanel, AiDraftButton, TemplatePicker) — 통합 중 발견한 툴바 버튼 답변 오발송도 함께 차단 (front #37)
 
 ### S3 (10/15 ~ 10/18)
 - [ ] CHAT_ROOM/CHAT_MESSAGE, 채팅 요청 → **대기열(WAITING, 순번 푸시)** → 상담원 배정 시 OPEN + CHAT 티켓 생성
@@ -129,7 +132,7 @@ flowchart LR
 - [x] `FileStorage`(LocalFileStorage), `MailSender`(LogMailSender), `LlmClient`(MockLlmClient) 인터페이스 + 로컬 구현
 - [x] TICKET_AI_RESULT, AI_DRAFT, MAIL_LOG 마이그레이션 + 엔티티, `AiResultPort` 스텁
 - [x] Spring AI 2.0.1 의존성 추가 요청(CR → 백성준, `spring-ai-bom`), LLM 제공자 후보 비교·선택(PRD Q11) → 팀 공유 후 개발용 키 발급 — **Gemini** 선택, 개발용 키 발급 완료
-- [x] AWS 계정/IAM 준비, **SES 샌드박스 해제 요청 또는 테스트 수신자 검증 시작** — SES 도메인 `helpnest.kro.kr` 인증, 프로덕션 액세스 요청(심사 중)
+- [x] AWS 계정/IAM 준비, **SES 샌드박스 해제 요청 또는 테스트 수신자 검증 시작** — SES 도메인 `helpnest.kro.kr` 인증, 프로덕션 액세스 요청 → 승인됨(10/6 확인)
 - [x] CloudFront(PRD Q20 ③) 구성 사전 테스트 — 임시 EC2 + CloudFront로 HTTPS API·WSS 연결 확인 (배포 주에 막히지 않도록) — HTTPS 200·WSS 101 확인, 임시 자원 삭제
 
 ### S1 (10/2 ~ 10/8)
@@ -139,15 +142,15 @@ flowchart LR
 - [x] 분류 테스트 샘플 30건 + 정확도 측정 (back #33, 결과 05 §6.1)
 
 ### S2 (10/9 ~ 10/14)
-- [ ] AI-2 답변 초안(FAQ·과거 답변 검색 + 프롬프트) API + `AiDraftButton`
-- [ ] AI-3 결과 메일 템플릿 + MAIL_LOG + 재시도 스케줄러
-- [ ] 메일 추가: `sendAgentReplyMail`, `sendPasswordResetMail` (회원·비회원 공용 템플릿)
-- [ ] 대시보드 API(요약·상담원별·본인) + 대시보드 페이지(KPI 카드, 분포 차트, 상담원 표)
+- [x] AI-2 답변 초안(FAQ·과거 답변 검색 + 프롬프트) API + `AiDraftButton` (back #55, front #22, 05 §4.4)
+- [x] AI-3 결과 메일 템플릿 + MAIL_LOG + 재시도 스케줄러 (back #50·#51·#53, docs #31)
+- [x] 메일 추가: `sendAgentReplyMail`, `sendPasswordResetMail` (회원·비회원 공용 템플릿) (back #50·#51)
+- [x] 대시보드 API(요약·상담원별·본인) + 대시보드 페이지(KPI 카드, 분포 차트, 상담원 표) (back #57, front #26)
 
 ### S3 (10/15 ~ 10/18)
-- [ ] 월간 리포트 API + 페이지(유형별 건수·전월 대비·처리시간·SLA·만족도·불만 비율)
-- [ ] 리포트·상담원 처리현황 **CSV 다운로드**(UTF-8 BOM)
-- [ ] `S3FileStorage`, `SesMailSender` 구현(prod 프로필) + 로컬에서 실제 AWS 연결 테스트
+- [x] 월간 리포트 API + 페이지(유형별 건수·전월 대비·처리시간·SLA·만족도·불만 비율) (back #63, front #28) — 만족도는 설문 테이블 머지 후
+- [x] 리포트·상담원 처리현황 **CSV 다운로드**(UTF-8 BOM, 수식 주입 방지) (back #65, front #28)
+- [x] `S3FileStorage`, `SesMailTransport` 구현(prod 프로필) + 로컬에서 실제 AWS 연결 테스트 (CR back #60→#64, back #69, `AwsLiveTest` 2/2)
 
 ### S4 (10/19 ~ 10/21)
 - [ ] RDS 생성 + Flyway 적용, EC2 백엔드 배포 + CloudFront(HTTPS/WSS, PRD Q20), 환경변수/비밀값 설정

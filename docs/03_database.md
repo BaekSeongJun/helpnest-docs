@@ -295,10 +295,12 @@ CREATE TABLE mail_log (
   to_email    VARCHAR(100) NOT NULL,
   mail_type   VARCHAR(30) NOT NULL,            -- RESOLVED_SURVEY / AGENT_REPLY / PASSWORD_RESET / GUEST_PASSWORD_RESET
   status      VARCHAR(10) NOT NULL,            -- SENT / FAILED / LOGGED(local)
-  retry_count INT NOT NULL DEFAULT 0,
+  retry_count INT NOT NULL DEFAULT 0,            -- 재시도 횟수(최대 3)
   error_msg   VARCHAR(500),
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  sent_at     TIMESTAMPTZ
+  sent_at     TIMESTAMPTZ,
+  subject     VARCHAR(200),                    -- 재시도용 렌더링 결과
+  body        TEXT                             -- HTML. 설문·재설정 토큰 URL 포함 → 로그 출력 금지
 );
 ```
 
@@ -409,6 +411,6 @@ WHERE status = 'RESOLVED' AND resolved_at < NOW() - INTERVAL '72 hours';
 | 파일 | 소유 | 내용 |
 |---|---|---|
 | `R__seed_BSJ_member.sql` | 백성준 | ADMIN 1, LEAD 1, AGENT 3, CUSTOMER 3 — `admin@helpnest.local`, `lead@…`, `agent1~3@…`, `customer1~3@…` (비밀번호 공통 `Test1234!`) ✅ |
-| `R__seed_BSJ_support_faq_template.sql` | 백성준 | 유형별 FAQ 3개 ✅, 템플릿 2개(S2) — `member` 시드보다 **뒤에** 실행돼야 해서 이 이름 (Repeatable 은 설명 알파벳 순 실행, `created_by` 가 admin 참조) |
+| `R__seed_BSJ_support_faq_template.sql` | 백성준 | 유형별 FAQ 3개 ✅, 템플릿 2개 ✅ — `member` 시드보다 **뒤에** 실행돼야 해서 이 이름 (Repeatable 은 설명 알파벳 순 실행, `created_by` 가 admin 참조) |
 | `R__seed_PMJ_ticket.sql` | 박민재 | 상태별 티켓 각 3개, SLA 초과 샘플 포함 |
 | `R__seed_SSJ_ai.sql` | 신수진 | 분류 결과/초안 샘플, 대시보드용 과거 30일 데이터 |

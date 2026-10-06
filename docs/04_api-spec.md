@@ -8,6 +8,7 @@
 - 인증: `Authorization: Bearer {accessToken}` / 비회원 티켓 조회는 Guest 토큰(해당 ticketId 한정 scope)
 - 토큰 보관: Access·Guest 토큰은 프론트 **메모리**, Refresh는 **httpOnly 쿠키**(JS 접근 불가). REST는 Next.js 프록시(`/api/*` rewrites)로 같은 출처에서 호출하므로 CORS 불필요. 예외로 **첨부 업로드(`POST /api/attachments`)와 `/ws`만** 백엔드에 직접 호출 → 이 두 경로만 CORS/Origin에 `FRONT_ORIGIN` 허용 ([02 §2.1](02_architecture.md#21-요청-경로-배포-환경))
 - 날짜: ISO-8601 (`2026-10-01T10:30:00+09:00`)
+- **권한 검증**: 이 문서의 "권한" 열은 back `RoleAccessMatrixTest` 가 비로그인·Guest·고객·상담원·팀장·관리자 6종으로 대조한다(구현된 엔드포인트 한정). 권한 열을 바꾸면 그 테스트의 `matrix()` 행도 같은 PR 에서 고친다.
 - 페이지: `?page=0&size=20&sort=createdAt,desc`
 
 ### 1.1 응답 형식
@@ -37,13 +38,13 @@
 | POST | `/api/auth/refresh` | 공개(쿠키) | 쿠키의 Refresh로 Access 재발급 + Refresh 회전(새 쿠키) → `{accessToken, member}` |
 | POST | `/api/auth/logout` | 로그인 | Refresh 폐기 + 쿠키 삭제 |
 | POST | `/api/auth/guest` | 공개 | `{ticketNo, email, password}` → `{guestToken, ticketId, expiresIn}`(초, 30분). 쿠키 없음 — 프론트 메모리에 두고 `Authorization: Bearer`. 토큰: `sub=guest:{ticketId}`, `role=GUEST`, `ticketId` 클레임. 티켓 없음·이메일 불일치·회원 티켓·비밀번호 오류는 모두 같은 `401 AUTH_GUEST_INVALID`(열거 방지, 실패 경로도 BCrypt 1회). 이메일 대소문자 무시. Guest 토큰으로 회원 API 호출 시 403 |
-| POST | `/api/auth/password/reset-request` | 공개 | `{email}` → 항상 200 (계정 존재 여부 비노출), 재설정 메일 |
-| POST | `/api/auth/password/reset` | 공개 | `{token, newPassword}` |
-| POST | `/api/auth/guest/reset-request` | 공개 | `{ticketNo, email}` → 항상 200, 조회 비밀번호 재설정 메일 |
-| POST | `/api/auth/guest/reset` | 공개 | `{token, newPassword}` → `TicketGuestPort.updateGuestPassword` |
+| POST | `/api/auth/password/reset-request` | 공개 | `{email}` → 항상 200 (계정 존재 여부 비노출). 활성 회원일 때만 30분·1회용 링크 `{FRONT_ORIGIN}/reset-password?token=` 메일 — 커밋 후 비동기 발송이라 응답 시간에 메일 전송이 섞이지 않음 |
+| POST | `/api/auth/password/reset` | 공개 | `{token, newPassword(8~64)}` → 비밀번호 교체 + Refresh 전부 폐기, 같은 회원의 다른 링크도 사용 처리. 없음·만료·사용됨은 모두 `400 AUTH_RESET_TOKEN_INVALID` |
+| POST | `/api/auth/guest/reset-request` | 공개 | `{ticketNo, email}` → 항상 200 (티켓·이메일 일치 여부 비노출). 비회원 티켓과 일치할 때만 30분·1회용 링크 `{FRONT_ORIGIN}/inquiry/lookup/reset?token=` 메일(`GUEST_PASSWORD_RESET`) — 커밋 후 비동기 발송. 이메일 대소문자 무시, 메일은 입력한 주소로 발송 |
+| POST | `/api/auth/guest/reset` | 공개 | `{token, newPassword(4~64)}` → 비밀번호를 서버에서 BCrypt 해싱해 `TicketGuestPort.updateGuestPassword` 로 교체(원문은 포트로 넘기지 않음). 같은 티켓의 다른 링크도 사용 처리. 없음·만료·사용됨·유형 불일치는 모두 `400 AUTH_RESET_TOKEN_INVALID`. 이전 조회 비밀번호는 즉시 무효 |
 | GET | `/api/members/me` | 로그인 | 내 정보 |
-| PATCH | `/api/members/me` | 로그인 | `{name, phone}` 내 정보 수정 |
-| PATCH | `/api/members/me/password` | 로그인 | `{currentPassword, newPassword}` → Refresh 토큰 전체 폐기 |
+| PATCH | `/api/members/me` | 로그인 | `{name, phone}` 내 정보 수정 → 내 정보. `phone` 을 비우면 삭제, 검증은 회원가입과 동일 |
+| PATCH | `/api/members/me/password` | 로그인 | `{currentPassword, newPassword(8~64)}` → Refresh 토큰 전체 폐기(프론트는 로그아웃 처리). 현재 비밀번호 불일치 `400 AUTH_PASSWORD_MISMATCH` |
 | PATCH | `/api/members/me/availability` | AGENT | `{available: true}` → 내 정보. 역할이 AGENT 가 아니면(LEAD·ADMIN 포함) `403 MEMBER_NOT_AGENT` |
 | GET | `/api/console/agents` | AGENT+ | 배정 드롭다운용 활성 상담원(상담 불가 포함) 이름순 → `[{memberId, name, available, activeCount}]`. `activeCount` 는 ASSIGNED·IN_PROGRESS 티켓 수(자동 배정과 같은 기준). 이메일·연락처는 주지 않는다 (CR #44) |
 | GET | `/api/admin/members` | ADMIN | 목록 `?role=&status=&page=&size=` (기본 가입일 최신순 20개) → 페이지 `{memberId, email, name, phone, role, status, available, createdAt}` |
@@ -69,19 +70,26 @@
 |---|---|---|---|
 | GET | `/api/faqs` | 공개 | `?category=&keyword=&page=&size=` → 페이지 `{faqId, category, question, answer, published, viewCount, createdAt, updatedAt}`. **공개 글만**, 기본 조회수 높은 순 20개. keyword 는 질문·답변 부분 일치(대소문자 무시) |
 | GET | `/api/faqs/{id}` | 공개 | 조회수 +1 후 반환 (아코디언을 열 때 호출). 비공개·없는 글은 `404` |
-| GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천(상위 3) — S2 |
+| GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천 → `[FaqResponse]`(목록과 같은 필드) 공개 글 중 질문·답변 부분 일치, 조회수 높은 순 최대 3건. `q` 가 공백 제외 2자 미만이면 빈 배열 |
 | GET | `/api/admin/faqs` | LEAD, ADMIN | 관리 표용 목록 — 비공개 포함, 기본 최신순. 쿼리는 `/api/faqs` 와 같음 |
 | POST/PUT/DELETE | `/api/admin/faqs[/{id}]` | LEAD, ADMIN | `{category, question(≤300), answer(≤5,000), published?}` (published 생략 시 공개). POST `201`, DELETE 는 실제 삭제 |
-| GET | `/api/templates` | AGENT+ | `?category=&keyword=` |
-| POST/PUT/DELETE | `/api/admin/templates[/{id}]` | LEAD, ADMIN | CRUD |
+| GET | `/api/templates` | AGENT+ | `?category=&keyword=&page=&size=` → 페이지 `{templateId, category, title, content, active, createdAt, updatedAt}`. **사용 중(active)만**, 기본 제목순 50개. keyword 는 제목·본문 부분 일치(대소문자 무시). `TemplatePicker` 용 |
+| GET | `/api/admin/templates` | LEAD, ADMIN | 관리 표용 목록 — 미사용 포함, 기본 최신순. 쿼리는 `/api/templates` 와 같음 |
+| POST/PUT/DELETE | `/api/admin/templates[/{id}]` | LEAD, ADMIN | `{category, title(≤100), content(≤5,000), active?}` (active 생략 시 사용). POST `201`, DELETE 는 실제 삭제. 본문의 `{고객명}`·`{티켓번호}` 는 서버가 치환하지 않고 `TemplatePicker` 가 삽입할 때 치환 |
 
 ## 5. 만족도 설문 (백성준)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| GET | `/api/surveys/{token}` | 공개(토큰) | 티켓번호·제목·만료 여부 |
-| POST | `/api/surveys/{token}` | 공개(토큰) | `{rating: 1~5, comment}` → SurveySubmittedEvent |
-| GET | `/api/console/surveys` | AGENT(본인 담당분), LEAD+ | 설문 결과 목록 `?from=&to=&rating=&agentId=&category=&page=` |
-| GET | `/api/console/surveys/summary` | AGENT(본인), LEAD+ | 응답률, 평균 별점, 별점 분포 (같은 필터) |
+| GET | `/api/surveys/{token}` | 공개(토큰) | → `{ticketNo, title, expired, submitted}`. 없는 토큰 `404 SURVEY_NOT_FOUND` |
+| POST | `/api/surveys/{token}` | 공개(토큰) | `{rating(1~5), comment?(≤1,000자)}` → 200. **1회만** 제출, 성공 시 `SurveySubmittedEvent(ticketId, rating)` 발행(박민재 `TicketCloseListener` 가 CLOSED 전이). 의견은 앞뒤 공백 제거, 비면 null. 없는 토큰 `404 SURVEY_NOT_FOUND`, 이미 제출 `409 SURVEY_ALREADY_SUBMITTED`, 기간 경과·재문의 `410 SURVEY_EXPIRED`, 별점 없음·범위 밖·의견 초과 `400 COMMON_INVALID_INPUT` |
+| GET | `/api/console/surveys` | AGENT(본인 담당분), LEAD+ | 설문 결과 목록 `?from=&to=&rating=&agentId=&category=&page=&size=` → 페이지 `{ticketId, ticketNo, customerName, agentName, rating, comment, submittedAt}`. **제출된 응답만**, 최근 제출순. 규칙은 아래 |
+| GET | `/api/console/surveys/summary` | AGENT(본인), LEAD+ | `?from=&to=&agentId=&category=` → `{sent, responded, responseRate, avgRating, distribution{"1".."5"}}`. 규칙은 아래 |
+
+> - **링크 수명**: 해결(RESOLVED) 시 `SurveyListener` 가 설문을 만들고 결과 메일에 `{FRONT_ORIGIN}/survey/{token}` 을 싣는다. 유효 기간은 발송 후 **72시간**. 고객 재문의(RESOLVED→IN_PROGRESS)로 미제출 설문은 즉시 만료(`410`), 제출된 응답은 그대로 둔다. **재해결**되면 같은 행의 토큰·기간을 새로 발급하고 이전 응답을 지운다(FR-SRV-06) — 옛 링크는 `404`.
+> - **중복 제출 방지**: 미제출·미만료 조건의 UPDATE 로 확정해서 동시 요청도 한 번만 반영된다.
+> - **결과 조회 규칙**: ① 기간(`from`·`to`, `yyyy-MM-dd`, 한국 날짜, 양끝 포함)은 **발송일(`sent_at`) 기준** — 응답률의 분모(발송)와 분자(응답)를 같은 집단으로 맞추기 위해서다. ② AGENT 는 요청의 `agentId` 를 **무시하고 본인 담당분**만 본다(403 이 아니라 서버가 덮어씀), LEAD+ 는 전체이며 `agentId` 로 좁힌다. ③ `summary` 는 `rating` 필터를 **받지 않고 무시**한다 — 분포가 곧 별점 축이라 걸러 버리면 응답률이 왜곡된다. ④ 별점(1~5)·기간 순서(`from`≤`to`)·유형·날짜 형식이 틀리면 `400 COMMON_INVALID_INPUT`.
+> - **요약 단위**: `responseRate` 0~100(%, 소수 1자리), `avgRating` 소수 1자리(5점 만점). 발송이 없으면 `responseRate`, 응답이 없으면 `avgRating` 은 `null`. `distribution` 은 `"1"`~`"5"` 키가 항상 있고 값은 0 이상.
+> - 목록의 `agentName` 은 담당자가 없는 티켓이면 `null`, `customerName` 은 회원 이름 또는 비회원 이름.
 
 ## 6. 고객 이력 묶음 (백성준)
 | Method | URL | 권한 | 설명 |
@@ -171,16 +179,39 @@
 |---|---|---|---|
 | GET | `/api/console/tickets/{id}/ai` | AGENT+ | 분류 결과 `{category, urgency, sentiment, summary, confidence, status}` |
 | POST | `/api/console/tickets/{id}/ai/classify` | AGENT+ | 재분류 (동기, 타임아웃 10초) |
-| POST | `/api/console/tickets/{id}/ai/drafts` | 담당 AGENT, LEAD+ | 초안 생성 → `{draftId, content, references[]}` |
-| GET | `/api/console/tickets/{id}/ai/drafts` | AGENT+ | 초안 목록 |
+| POST | `/api/console/tickets/{id}/ai/drafts` | 담당 AGENT, LEAD+ | 초안 생성(동기) → `{draftId, content, references[{type: FAQ\|REPLY, id, label}], model, createdAt}`. 담당 아님 403 `AI_NOT_ASSIGNEE`, LLM 실패 503 `AI_PROVIDER_UNAVAILABLE` (docs/05 §4.4) |
+| GET | `/api/console/tickets/{id}/ai/drafts` | AGENT+ | 초안 목록(최신순), 항목 형식은 POST 응답과 같음 |
 
 ## 13. 대시보드 · 리포트 (신수진)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| GET | `/api/dashboard/summary` | LEAD+ | `?period=TODAY\|7D\|30D` KPI(전체/미배정/SLA위반율/평균응답/평균만족도) + 상태·유형 분포 |
-| GET | `/api/dashboard/agents` | LEAD+ | 상담원별 처리현황 |
-| GET | `/api/dashboard/agents/me` | AGENT | 본인 처리현황 |
-| GET | `/api/reports/monthly` | LEAD+ | `?month=2026-10` 유형별 리포트 + 전월 대비 |
-| GET | `/api/reports/monthly/export` | LEAD+ | `?month=2026-10` → `text/csv` (UTF-8 BOM), `Content-Disposition: attachment; filename=helpnest_report_2026-10.csv` |
-| GET | `/api/dashboard/agents/export` | LEAD+ | `?period=` 상담원별 처리현황 CSV |
+| GET | `/api/dashboard/summary` | LEAD+ | `?period=TODAY\|7D\|30D` → `{total, unassigned, slaBreachRate, avgFirstResponseMin, avgRating, byStatus{}, byCategory{}}` |
+| GET | `/api/dashboard/agents` | LEAD+ | `?period=` → 활성 AGENT 전원 `[AgentStat]` (티켓 0건도 포함, 이름순) |
+| GET | `/api/dashboard/agents/me` | AGENT+ | `?period=` → 본인 `AgentStat` 1행 |
+| GET | `/api/reports/monthly` | LEAD+ | `?month=2026-10` → `{month, total, prevTotal, avgFirstResponseMin, avgResolveHour, slaBreachRate, negativeRate, avgRating, byCategory[{category, count, prevCount, avgResolveHour, negativeRate}]}` |
+| GET | `/api/reports/monthly/export` | LEAD+ | `?month=2026-10` → CSV `helpnest_report_2026-10.csv` |
+| GET | `/api/dashboard/agents/export` | LEAD+ | `?period=` → CSV `helpnest_agents_{period}_{서울 yyyyMMdd}.csv` |
 | GET | `/actuator/health` | 공개 | 배포 헬스체크 |
+
+**대시보드 응답 규칙**
+- `period`: 생략 시 `TODAY`, 그 외 값은 400. 기준 시각 Asia/Seoul — `TODAY` = 오늘 0시~현재, `7D`/`30D` = 현재-n일~현재
+- 집계 대상은 **기간 내 접수(created_at)된 티켓**. 예외: `unassigned`(미배정·미종료, 기간 무관), `assignedCount`·`inProgressCount`(현재 담당 중), `resolvedToday`(오늘 해결)
+- `AgentStat` = `{agentId, name, assignedCount, inProgressCount, resolvedToday, avgFirstResponseMin, avgResolveHour, slaBreachRate, avgRating}`
+- 단위: `slaBreachRate` 0~100(%, 소수 1자리), `avgFirstResponseMin` 분(소수 1자리), `avgResolveHour` 시간(소수 2자리)
+- 비율·평균은 대상 티켓이 없으면 `null`(0 아님) → 화면은 `-`
+- `avgRating` = 기간 내 접수 티켓 중 **응답된 설문**(`survey.rating` not null)의 평균, 소수 1자리(5점 만점), 응답 없으면 `null`. 상담원별은 `ticket.agent_id` 기준. ※ 설문 결과 API(위 설문 절)는 **발송일(`sent_at`) 기준**이라 같은 기간이라도 값이 다를 수 있다
+- `byStatus`·`byCategory`: `{코드: 건수}`, 건수 많은 순
+- AGENT 가 `summary`·`agents`·`agents/export` 호출 시 403 (FR-DSH-03)
+
+**월간 리포트 응답 규칙**
+- `month`: `YYYY-MM`, 생략 시 서울 기준 이번 달, 형식 오류 400. 대상은 그 달 **[서울 월초, 다음 달 월초)** 에 접수된 티켓
+- `prevTotal`·`prevCount` = 전월 같은 기준 건수. `byCategory` 는 이번 달 유형(많은 순) 뒤에 **전월에만 있던 유형**을 `count=0`, 지표 `null` 로 붙인다
+- `negativeRate` = `sentiment = NEGATIVE` 비율. 비율 0~100(소수 1자리), 대상 없으면 비율·평균 `null`. `avgRating` 은 대시보드와 같은 규칙(그 달 접수 티켓의 응답된 설문 평균)
+
+**CSV 형식 (FR-RPT-02)**
+- `text/csv;charset=UTF-8`, 본문 앞 **BOM(EF BB BF)** — 엑셀에서 한글 정상. 줄바꿈 CRLF, 첫 줄은 한글 헤더
+- 리포트 열: `유형, 건수, 전월 건수, 증감률(%), 평균 처리시간(시간), 불만 비율(%)` — 유형은 한글 라벨, 마지막에 **합계** 행. 증감률은 전월 0 이면 빈 칸
+- 상담원 열: `상담원, 배정, 처리중, 오늘 해결, 평균 첫 응답(분), 평균 해결(시간), SLA 위반율(%), 평균 만족도`
+- `null` 은 빈 칸. 쉼표·따옴표·개행이 있는 셀은 `"..."` 로 감싸고 `"` 는 `""`
+- **수식 주입 방지**: 문자열 셀이 `= + - @ 탭 CR` 로 시작하면 앞에 `'` 를 붙인다(숫자 셀은 그대로라 음수 증감률도 숫자)
+- 파일명은 `Content-Disposition: attachment` 로 내려가지만, 프론트는 같은 규칙으로 직접 만든다(헤더 노출용 CORS 설정 불필요)
