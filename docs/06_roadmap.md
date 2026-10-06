@@ -65,13 +65,13 @@ flowchart LR
 
 ### S2 (10/9 ~ 10/14)
 - [x] 템플릿 CRUD + `TemplatePicker` 컴포넌트 (박민재에 전달)
-- [ ] `SurveyListener`(RESOLVED) → 설문 생성 → 신수진 `MailSender` 호출, 재문의 시 설문 만료·재해결 시 재발급(FR-SRV-06)
-- [ ] 설문 페이지 + 제출 → `SurveySubmittedEvent`
-- [ ] 접수 폼 FAQ 추천
-- [ ] PASSWORD_RESET_TOKEN + 비밀번호 찾기/재설정, 비밀번호 변경·내 정보 수정 (CM-03·04, CU-10)
-- [ ] 비회원 조회 비밀번호 재설정 (CU-06, 박민재 `TicketGuestPort` 사용)
-- [ ] 설문 결과 조회 API + 화면 (CS-06)
-- [ ] 권한별 메뉴/접근 통합 점검
+- [x] `SurveyListener`(RESOLVED) → 설문 생성 → 신수진 `MailSender` 호출, 재문의 시 설문 만료·재해결 시 재발급(FR-SRV-06)
+- [x] 설문 페이지 + 제출 → `SurveySubmittedEvent` (※ 구독자 박민재 `TicketCloseListener` 머지 후 "제출 → CLOSED" E2E 확인 필요)
+- [x] 접수 폼 FAQ 추천
+- [x] PASSWORD_RESET_TOKEN + 비밀번호 찾기/재설정, 비밀번호 변경·내 정보 수정 (CM-03·04, CU-10)
+- [x] 비회원 조회 비밀번호 재설정 (CU-06, 박민재 `TicketGuestPort` 사용)
+- [x] 설문 결과 조회 API + 화면 (CS-06)
+- [x] 권한별 메뉴/접근 통합 점검 — back `RoleAccessMatrixTest`(6종 × 24개 엔드포인트 = 144건)로 04 권한 열과 대조, 역할별 직접 URL 접근·메뉴를 09 권한표와 대조(일치). 남은 항목: ① `GET /api/tickets/my` 가 CUSTOMER 전용이 아님(박민재 CR) ② 메뉴에는 있으나 페이지·API 가 아직 없는 `/chat`·`/console/chat`·`/admin/sla`(박민재 S2) — 구현되면 `matrix()` 에 행 추가
 
 ### S3 (10/15 ~ 10/18)
 - [ ] 고객 이력 묶음 API + `CustomerHistoryPanel` 컴포넌트, 고객 이력 페이지

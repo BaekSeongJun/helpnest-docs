@@ -8,6 +8,7 @@
 - 인증: `Authorization: Bearer {accessToken}` / 비회원 티켓 조회는 Guest 토큰(해당 ticketId 한정 scope)
 - 토큰 보관: Access·Guest 토큰은 프론트 **메모리**, Refresh는 **httpOnly 쿠키**(JS 접근 불가). REST는 Next.js 프록시(`/api/*` rewrites)로 같은 출처에서 호출하므로 CORS 불필요. 예외로 **첨부 업로드(`POST /api/attachments`)와 `/ws`만** 백엔드에 직접 호출 → 이 두 경로만 CORS/Origin에 `FRONT_ORIGIN` 허용 ([02 §2.1](02_architecture.md#21-요청-경로-배포-환경))
 - 날짜: ISO-8601 (`2026-10-01T10:30:00+09:00`)
+- **권한 검증**: 이 문서의 "권한" 열은 back `RoleAccessMatrixTest` 가 비로그인·Guest·고객·상담원·팀장·관리자 6종으로 대조한다(구현된 엔드포인트 한정). 권한 열을 바꾸면 그 테스트의 `matrix()` 행도 같은 PR 에서 고친다. 현재 알려진 어긋남: `GET /api/tickets/my` 는 CUSTOMER 전용으로 적혀 있으나 로그인 회원 누구나 200(직원은 빈 목록) — 박민재 CR 대상
 - 페이지: `?page=0&size=20&sort=createdAt,desc`
 
 ### 1.1 응답 형식
@@ -39,8 +40,8 @@
 | POST | `/api/auth/guest` | 공개 | `{ticketNo, email, password}` → `{guestToken, ticketId, expiresIn}`(초, 30분). 쿠키 없음 — 프론트 메모리에 두고 `Authorization: Bearer`. 토큰: `sub=guest:{ticketId}`, `role=GUEST`, `ticketId` 클레임. 티켓 없음·이메일 불일치·회원 티켓·비밀번호 오류는 모두 같은 `401 AUTH_GUEST_INVALID`(열거 방지, 실패 경로도 BCrypt 1회). 이메일 대소문자 무시. Guest 토큰으로 회원 API 호출 시 403 |
 | POST | `/api/auth/password/reset-request` | 공개 | `{email}` → 항상 200 (계정 존재 여부 비노출). 활성 회원일 때만 30분·1회용 링크 `{FRONT_ORIGIN}/reset-password?token=` 메일 — 커밋 후 비동기 발송이라 응답 시간에 메일 전송이 섞이지 않음 |
 | POST | `/api/auth/password/reset` | 공개 | `{token, newPassword(8~64)}` → 비밀번호 교체 + Refresh 전부 폐기, 같은 회원의 다른 링크도 사용 처리. 없음·만료·사용됨은 모두 `400 AUTH_RESET_TOKEN_INVALID` |
-| POST | `/api/auth/guest/reset-request` | 공개 | `{ticketNo, email}` → 항상 200, 조회 비밀번호 재설정 메일 |
-| POST | `/api/auth/guest/reset` | 공개 | `{token, newPassword}` → `TicketGuestPort.updateGuestPassword` |
+| POST | `/api/auth/guest/reset-request` | 공개 | `{ticketNo, email}` → 항상 200 (티켓·이메일 일치 여부 비노출). 비회원 티켓과 일치할 때만 30분·1회용 링크 `{FRONT_ORIGIN}/inquiry/lookup/reset?token=` 메일(`GUEST_PASSWORD_RESET`) — 커밋 후 비동기 발송. 이메일 대소문자 무시, 메일은 입력한 주소로 발송 |
+| POST | `/api/auth/guest/reset` | 공개 | `{token, newPassword(4~64)}` → 비밀번호를 서버에서 BCrypt 해싱해 `TicketGuestPort.updateGuestPassword` 로 교체(원문은 포트로 넘기지 않음). 같은 티켓의 다른 링크도 사용 처리. 없음·만료·사용됨·유형 불일치는 모두 `400 AUTH_RESET_TOKEN_INVALID`. 이전 조회 비밀번호는 즉시 무효 |
 | GET | `/api/members/me` | 로그인 | 내 정보 |
 | PATCH | `/api/members/me` | 로그인 | `{name, phone}` 내 정보 수정 → 내 정보. `phone` 을 비우면 삭제, 검증은 회원가입과 동일 |
 | PATCH | `/api/members/me/password` | 로그인 | `{currentPassword, newPassword(8~64)}` → Refresh 토큰 전체 폐기(프론트는 로그아웃 처리). 현재 비밀번호 불일치 `400 AUTH_PASSWORD_MISMATCH` |
@@ -79,10 +80,16 @@
 ## 5. 만족도 설문 (백성준)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| GET | `/api/surveys/{token}` | 공개(토큰) | 티켓번호·제목·만료 여부 |
-| POST | `/api/surveys/{token}` | 공개(토큰) | `{rating: 1~5, comment}` → SurveySubmittedEvent |
-| GET | `/api/console/surveys` | AGENT(본인 담당분), LEAD+ | 설문 결과 목록 `?from=&to=&rating=&agentId=&category=&page=` |
-| GET | `/api/console/surveys/summary` | AGENT(본인), LEAD+ | 응답률, 평균 별점, 별점 분포 (같은 필터) |
+| GET | `/api/surveys/{token}` | 공개(토큰) | → `{ticketNo, title, expired, submitted}`. 없는 토큰 `404 SURVEY_NOT_FOUND` |
+| POST | `/api/surveys/{token}` | 공개(토큰) | `{rating(1~5), comment?(≤1,000자)}` → 200. **1회만** 제출, 성공 시 `SurveySubmittedEvent(ticketId, rating)` 발행(박민재 `TicketCloseListener` 가 CLOSED 전이). 의견은 앞뒤 공백 제거, 비면 null. 없는 토큰 `404 SURVEY_NOT_FOUND`, 이미 제출 `409 SURVEY_ALREADY_SUBMITTED`, 기간 경과·재문의 `410 SURVEY_EXPIRED`, 별점 없음·범위 밖·의견 초과 `400 COMMON_INVALID_INPUT` |
+| GET | `/api/console/surveys` | AGENT(본인 담당분), LEAD+ | 설문 결과 목록 `?from=&to=&rating=&agentId=&category=&page=&size=` → 페이지 `{ticketId, ticketNo, customerName, agentName, rating, comment, submittedAt}`. **제출된 응답만**, 최근 제출순. 규칙은 아래 |
+| GET | `/api/console/surveys/summary` | AGENT(본인), LEAD+ | `?from=&to=&agentId=&category=` → `{sent, responded, responseRate, avgRating, distribution{"1".."5"}}`. 규칙은 아래 |
+
+> - **링크 수명**: 해결(RESOLVED) 시 `SurveyListener` 가 설문을 만들고 결과 메일에 `{FRONT_ORIGIN}/survey/{token}` 을 싣는다. 유효 기간은 발송 후 **72시간**. 고객 재문의(RESOLVED→IN_PROGRESS)로 미제출 설문은 즉시 만료(`410`), 제출된 응답은 그대로 둔다. **재해결**되면 같은 행의 토큰·기간을 새로 발급하고 이전 응답을 지운다(FR-SRV-06) — 옛 링크는 `404`.
+> - **중복 제출 방지**: 미제출·미만료 조건의 UPDATE 로 확정해서 동시 요청도 한 번만 반영된다.
+> - **결과 조회 규칙**: ① 기간(`from`·`to`, `yyyy-MM-dd`, 한국 날짜, 양끝 포함)은 **발송일(`sent_at`) 기준** — 응답률의 분모(발송)와 분자(응답)를 같은 집단으로 맞추기 위해서다. ② AGENT 는 요청의 `agentId` 를 **무시하고 본인 담당분**만 본다(403 이 아니라 서버가 덮어씀), LEAD+ 는 전체이며 `agentId` 로 좁힌다. ③ `summary` 는 `rating` 필터를 **받지 않고 무시**한다 — 분포가 곧 별점 축이라 걸러 버리면 응답률이 왜곡된다. ④ 별점(1~5)·기간 순서(`from`≤`to`)·유형·날짜 형식이 틀리면 `400 COMMON_INVALID_INPUT`.
+> - **요약 단위**: `responseRate` 0~100(%, 소수 1자리), `avgRating` 소수 1자리(5점 만점). 발송이 없으면 `responseRate`, 응답이 없으면 `avgRating` 은 `null`. `distribution` 은 `"1"`~`"5"` 키가 항상 있고 값은 0 이상.
+> - 목록의 `agentName` 은 담당자가 없는 티켓이면 `null`, `customerName` 은 회원 이름 또는 비회원 이름.
 
 ## 6. 고객 이력 묶음 (백성준)
 | Method | URL | 권한 | 설명 |
