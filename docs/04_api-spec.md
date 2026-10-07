@@ -120,7 +120,7 @@
 | POST | `/api/console/tickets/{id}/assign/auto` | LEAD+ | 자동 배정 재시도 |
 | PATCH | `/api/console/tickets/{id}/classification` | 담당 AGENT, LEAD+ | `{category, priority}` 수동 수정 (신수진의 AI 결과 overridden 기록은 신수진 포트 호출) |
 | POST | `/api/console/tickets/{id}/replies` | 담당 AGENT, LEAD+ | `{content, isInternal, aiDraftId?, attachmentIds?}` → 201 + `{replyId, writerType, writerName, content, isInternal, attachments, createdAt}`. `isInternal` 은 **필수**(빠뜨리면 400 — 기본값 false 로 처리하면 내부 메모가 고객에게 노출된다). `isInternal=false` 일 때만 `first_responded_at` 기록(최초 1회)과 ASSIGNED→IN_PROGRESS 전이가 일어난다 |
-| GET | `/api/console/tickets/{id}/histories` | AGENT+ | 상태·배정·분류 이력을 `created_at` 오름차순으로 → `[{historyId, action, fromValue, toValue, actorName, actorType, memo, createdAt}]` (`actorName` 은 SYSTEM·GUEST 수행자면 null) |
+| GET | `/api/console/tickets/{id}/histories` | AGENT+ | 상태·배정·분류 이력을 `created_at` 오름차순으로 → `[{historyId, action, fromValue, toValue, fromName, toName, actorName, actorType, memo, createdAt}]` (`actorName` 은 SYSTEM·GUEST 수행자면 null. `fromName`·`toName` 은 ASSIGN·REASSIGN 일 때 fromValue·toValue(member_id)의 상담원 이름, 그 외·조회 불가면 null — 값 자체는 id 그대로) |
 
 > 요청 제한: 공용 `RateLimitFilter`(백성준, IP 기준) → 초과 시 `429 COMMON_TOO_MANY_REQUESTS` + `Retry-After`(초).
 >
