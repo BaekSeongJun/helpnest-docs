@@ -113,11 +113,11 @@ flowchart LR
 - [x] 티켓 상세에 신수진·백성준 컴포넌트 통합(AiAnalysisPanel, AiDraftButton, TemplatePicker) — 통합 중 발견한 툴바 버튼 답변 오발송도 함께 차단 (front #37)
 
 ### S3 (10/15 ~ 10/18)
-- [ ] CHAT_ROOM/CHAT_MESSAGE, 채팅 요청 → **대기열(WAITING, 순번 푸시)** → 상담원 배정 시 OPEN + CHAT 티켓 생성
-- [ ] 대기 5분 초과 안내 → 문의로 남기기(CONVERTED)/나가기(CANCELED)
-- [ ] 고객 채팅 화면 / 상담원 채팅 콘솔, 메시지 저장·이전 메시지 로드, 종료 → RESOLVED
-- [ ] CHAT 티켓: 상담원 첫 메시지 → `first_responded_at` 기록 + IN_PROGRESS 전환, 이미 배정된 티켓은 `applyClassification` 시 재배정 안 함 (FR-CHT-06)
-- [ ] `/topic/console/tickets` 실시간 목록 갱신
+- [x] CHAT_ROOM/CHAT_MESSAGE, 채팅 요청 → **대기열(WAITING, 순번 푸시)** → 상담원 배정 시 OPEN + CHAT 티켓 생성 (back #85·#86, 상담 가능 전환 즉시 매칭 #96)
+- [x] 대기 5분 초과 안내 → 문의로 남기기(CONVERTED)/나가기(CANCELED) (back #86, 화면 front #44)
+- [x] 고객 채팅 화면 / 상담원 채팅 콘솔, 메시지 저장·이전 메시지 로드, 종료 → RESOLVED (back #88, front #44 CU-09·#47 CS-03)
+- [x] CHAT 티켓: 상담원 첫 메시지 → `first_responded_at` 기록 + IN_PROGRESS 전환, 이미 배정된 티켓은 `applyClassification` 시 재배정 안 함 (FR-CHT-06) — back #88, 재배정 금지는 `AssignmentService` 기존 가드 + `ChatMessageApiTest` 회귀 고정
+- [x] `/topic/console/tickets` 실시간 목록 갱신 — 신호에 행을 싣지 않고 현재 필터로 다시 불러온다, 몰리면 1초 모아 1회 (back #92, front #49)
 
 ### S4 (10/19 ~ 10/21)
 - [ ] 운영 환경 WebSocket 연결 확인(프록시/보안그룹), 시나리오 QA(상담원 흐름)
