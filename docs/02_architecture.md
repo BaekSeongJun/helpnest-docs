@@ -280,11 +280,32 @@ volumes:
 | `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` | DB | 백성준 |
 | `LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL` | AI | 신수진 |
 | `AWS_REGION`, `S3_BUCKET`, `SES_FROM_EMAIL` | AWS (prod) | 신수진 |
-| `FRONT_ORIGIN` | CORS, 설문 링크 | 백성준 |
+| `FRONT_ORIGIN` | CORS(`/api/attachments`·`/ws`), 메일 링크(설문·비밀번호 재설정·답변 알림). 기본값은 `local` 프로필에만 | 백성준 |
 | `REFRESH_COOKIE_SECURE` | Refresh 쿠키 Secure 여부 (로컬 `false` / 배포 `true`). SameSite는 항상 `Lax`, Path `/`, Domain 미지정 — REST가 프록시로 같은 출처가 되므로 가능 | 백성준 |
 | `BACKEND_ORIGIN` | Front **서버 전용**(rewrites 대상). 로컬 `http://localhost:8080` / 배포 `https://xxxx.cloudfront.net` | 백성준 |
 | `NEXT_PUBLIC_UPLOAD_BASE_URL` | Front — 첨부 업로드 직접 호출 주소 (로컬 `http://localhost:8080` / 배포 CloudFront) | 백성준 |
 | `NEXT_PUBLIC_WS_URL` | Front — `ws://localhost:8080/ws` / 배포 `wss://xxxx.cloudfront.net/ws` | 백성준 |
+
+### 7.1 배포 환경변수 체크리스트
+
+**백엔드(EC2)** — 키·예시는 `helpnest-back/deploy/helpnest.env.example`(신수진)을 그대로 채운다. `SPRING_PROFILES_ACTIVE=prod` 는 `deploy/helpnest-back.service` 가 넣는다.
+백성준 소유 키는 기본값이 `local` 프로필에만 있어 **비면 기동이 실패**한다(`Could not resolve placeholder '…'`).
+
+| 키 | 배포 값 | 비었을 때 |
+|---|---|---|
+| `JWT_SECRET` | 32바이트 이상 랜덤 | 기동 실패 |
+| `DB_URL`·`DB_USERNAME`·`DB_PASSWORD` | RDS 엔드포인트·계정 | 기동 실패 |
+| `FRONT_ORIGIN` | Amplify 도메인 `https://main.xxxx.amplifyapp.com` (끝 `/` 없이) | 기동 실패. 값이 틀리면 첨부 업로드·WebSocket 이 CORS 로 막히고 메일 링크가 엉뚱한 곳을 가리킨다 |
+| `REFRESH_COOKIE_SECURE` | `true` (생략 시 기본 `true`) | — |
+
+**프론트(Amplify)** — 세 값 모두 **빌드 결과물에 고정**된다(rewrites 대상, `NEXT_PUBLIC_*` 인라인). Amplify 콘솔 환경변수에 넣고, **값을 바꾸면 재빌드**해야 반영된다.
+빠지면 빌드는 성공하고 로그에 `[배포 확인] 빌드 환경변수 없음: …` 경고만 남는다(CI 빌드가 값 없이 돌아 실패시키지 않음).
+
+| 키 | 배포 값 | 비었을 때 |
+|---|---|---|
+| `BACKEND_ORIGIN` | `https://xxxx.cloudfront.net` | REST 가 `localhost:8080` 으로 프록시 → 로그인부터 전부 실패 |
+| `NEXT_PUBLIC_UPLOAD_BASE_URL` | `https://xxxx.cloudfront.net` | 첨부 업로드가 Amplify 를 거쳐 크기 제한에 걸릴 수 있다(§2.1) |
+| `NEXT_PUBLIC_WS_URL` | `wss://xxxx.cloudfront.net/ws` | STOMP 연결 실패 → 알림·채팅·콘솔 목록 실시간 갱신 중단 |
 
 ---
 
