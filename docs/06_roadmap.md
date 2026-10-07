@@ -74,9 +74,9 @@ flowchart LR
 - [x] 권한별 메뉴/접근 통합 점검 — back `RoleAccessMatrixTest`(6종 × 28개 엔드포인트 = 168건)로 04 권한 열과 대조, 역할별 직접 URL 접근·메뉴를 09 권한표와 대조(일치). 04 와의 어긋남은 없다(`GET /api/tickets/my` CUSTOMER 한정은 back #79 로 해소). 남은 항목: 메뉴에는 있으나 페이지·API 가 아직 없는 `/chat`·`/console/chat`·`/admin/sla`(박민재 S2) — 구현되면 `matrix()` 에 행 추가
 
 ### S3 (10/15 ~ 10/18)
-- [ ] 고객 이력 묶음 API + `CustomerHistoryPanel` 컴포넌트, 고객 이력 페이지
-- [ ] 반응형/UI 정리(공용 컴포넌트), 버그 수정
-- [ ] **최종 디자인 정리**(08 §13): 토큰 값·`components/ui` 스타일·폰트·로고 조정 (10/18~19)
+- [x] 고객 이력 묶음 API + `CustomerHistoryPanel` 컴포넌트, 고객 이력 페이지 (back #84, front #42, 04 §6 docs #44) — 패널은 박민재 `TicketSidePanel` 주입 자리에 연결 대기(`<CustomerHistoryPanel ticketId={ticket.ticketId} />`, front #42 본문)
+- [x] 반응형/UI 정리(공용 컴포넌트), 버그 수정 — 08 §14 검사 BSJ 파일 0건, 고객 화면 360px·콘솔 1024px 가로 스크롤 없음(수정 사항 없음). 남은 위반 1건은 박민재 `NotificationBell.tsx` `text-[10px]`(front #43 본문으로 요청)
+- [x] **최종 디자인 정리**(08 §13): 토큰 값·`components/ui` 스타일·폰트·로고 조정 — 블루 primary 확정(신수진 동의), info 청록·ai 보라 조정, 임시 SVG 로고, 폰트 Pretendard 유지 (front #43, docs #45). 메일 템플릿 색·로고 반영은 신수진(08 §13-4)
 
 ### S4 (10/19 ~ 10/21)
 - [ ] prod 환경변수/CORS 설정 지원, 시나리오 QA(고객 흐름), 발표 자료(담당 파트)
@@ -113,11 +113,11 @@ flowchart LR
 - [x] 티켓 상세에 신수진·백성준 컴포넌트 통합(AiAnalysisPanel, AiDraftButton, TemplatePicker) — 통합 중 발견한 툴바 버튼 답변 오발송도 함께 차단 (front #37)
 
 ### S3 (10/15 ~ 10/18)
-- [ ] CHAT_ROOM/CHAT_MESSAGE, 채팅 요청 → **대기열(WAITING, 순번 푸시)** → 상담원 배정 시 OPEN + CHAT 티켓 생성
-- [ ] 대기 5분 초과 안내 → 문의로 남기기(CONVERTED)/나가기(CANCELED)
-- [ ] 고객 채팅 화면 / 상담원 채팅 콘솔, 메시지 저장·이전 메시지 로드, 종료 → RESOLVED
-- [ ] CHAT 티켓: 상담원 첫 메시지 → `first_responded_at` 기록 + IN_PROGRESS 전환, 이미 배정된 티켓은 `applyClassification` 시 재배정 안 함 (FR-CHT-06)
-- [ ] `/topic/console/tickets` 실시간 목록 갱신
+- [x] CHAT_ROOM/CHAT_MESSAGE, 채팅 요청 → **대기열(WAITING, 순번 푸시)** → 상담원 배정 시 OPEN + CHAT 티켓 생성 (back #85·#86, 상담 가능 전환 즉시 매칭 #96)
+- [x] 대기 5분 초과 안내 → 문의로 남기기(CONVERTED)/나가기(CANCELED) (back #86, 화면 front #44)
+- [x] 고객 채팅 화면 / 상담원 채팅 콘솔, 메시지 저장·이전 메시지 로드, 종료 → RESOLVED (back #88, front #44 CU-09·#47 CS-03)
+- [x] CHAT 티켓: 상담원 첫 메시지 → `first_responded_at` 기록 + IN_PROGRESS 전환, 이미 배정된 티켓은 `applyClassification` 시 재배정 안 함 (FR-CHT-06) — back #88, 재배정 금지는 `AssignmentService` 기존 가드 + `ChatMessageApiTest` 회귀 고정
+- [x] `/topic/console/tickets` 실시간 목록 갱신 — 신호에 행을 싣지 않고 현재 필터로 다시 불러온다, 몰리면 1초 모아 1회 (back #92, front #49)
 
 ### S4 (10/19 ~ 10/21)
 - [ ] 운영 환경 WebSocket 연결 확인(프록시/보안그룹), 시나리오 QA(상담원 흐름)
