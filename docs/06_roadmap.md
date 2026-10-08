@@ -153,9 +153,9 @@ flowchart LR
 - [x] `S3FileStorage`, `SesMailTransport` 구현(prod 프로필) + 로컬에서 실제 AWS 연결 테스트 (CR back #60→#64, back #69, `AwsLiveTest` 2/2)
 
 ### S4 (10/19 ~ 10/21)
-- [ ] RDS 생성 + Flyway 적용, EC2 백엔드 배포 + CloudFront(HTTPS/WSS, PRD Q20), 환경변수/비밀값 설정
-- [ ] **Amplify**로 프론트 배포: 백성준 계정으로 GitHub 연동 승인 → `helpnest-front` `main` 연결, 환경변수 등록, 백엔드 CORS에 Amplify 도메인 반영
-- [ ] S3 버킷·CORS, SES 발신 검증, 운영 스모크 테스트
+- [x] RDS 생성 + Flyway 적용, EC2 백엔드 배포 + CloudFront(HTTPS/WSS, PRD Q20), 환경변수/비밀값 설정 (02 §8, back #100·#102)
+- [x] **Amplify**로 프론트 배포: 백성준 계정으로 GitHub 연동 승인 → `helpnest-front` `main` 연결, 환경변수 등록, 백엔드 CORS에 Amplify 도메인 반영 (front #55, 10/8 `main.dznupx7lhr770.amplifyapp.com`)
+- [x] S3 버킷·CORS, SES 발신 검증, 운영 스모크 테스트 (02 §8.2 — 발견 3건: back #104·#105, front #57)
 - [ ] dev → main 최종 머지 진행, 배포 URL/계정 README 기록
 
 ---
