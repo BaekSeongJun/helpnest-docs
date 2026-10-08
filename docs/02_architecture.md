@@ -314,7 +314,7 @@ volumes:
 
 ## 8. AWS 배포 (신수진, Sprint 4)
 
-운영 URL — 프론트 `https://main.dznupx7lhr770.amplifyapp.com` · API `https://d1rf8nrptjrzmx.cloudfront.net` (서울 `ap-northeast-2`, 10/8 운영 반영).
+운영 URL — 프론트 `https://helpnest.kro.kr` · API `https://d1rf8nrptjrzmx.cloudfront.net` (서울 `ap-northeast-2`, 10/8 운영 반영). `www.helpnest.kro.kr`·Amplify 기본 도메인 `main.dznupx7lhr770.amplifyapp.com` 은 apex 로 301.
 public repo 라서 EC2 IP·인스턴스 ID, RDS 엔드포인트, 보안그룹 ID, 계정 ID, 비밀값은 적지 않는다(담당자 로컬 기록).
 
 | 자원 | 용도 | 구성 |
@@ -322,9 +322,10 @@ public repo 라서 EC2 IP·인스턴스 ID, RDS 엔드포인트, 보안그룹 ID
 | RDS PostgreSQL 16 | 운영 DB | `db.t4g.micro`, 퍼블릭 액세스 없음, 보안그룹은 EC2 에서만 5432. 스키마는 백엔드 기동 시 Flyway `db/migration` 만 적용(시드 없음). 최초 ADMIN 1명은 EC2 에서 psql 로 1회 생성(back #102), 나머지 계정은 관리자 API |
 | EC2 | Spring Boot 백엔드 (8080) | Amazon Linux 2023 · Corretto 21 · systemd `helpnest-back`(`deploy/`), `prod` 프로필. **CloudFront 뒤에 배치**(PRD Q20) — 보안그룹은 CloudFront 관리형 prefix list(`com.amazonaws.global.cloudfront.origin-facing`)만 8080 허용. 환경변수는 `/etc/helpnest/helpnest.env`(600 root, 키 목록은 `deploy/helpnest.env.example`) |
 | **CloudFront** | 백엔드 HTTPS·WSS (`*.cloudfront.net` 인증서) | Origin: EC2 **퍼블릭 DNS**(IP 불가), HTTP 8080 / Viewer **HTTPS only**. `/api/*`: **CachingDisabled** + **AllViewerExceptHostHeader**, GET~DELETE 전체. `/ws*`: CachingDisabled + WebSocket 헤더 전달. 받은 `X-Forwarded-For` 는 지우지 않고 **뒤에 덧붙인다**(§2.1 클라이언트 IP 판별) |
-| **Amplify Hosting** | Next.js 프론트 (PRD Q9) | 앱 `helpnest-front`(WEB_COMPUTE). GitHub `helpnest-front` `main` 만 연결 → main 머지 시 자동 빌드·배포(dev 자동 배포 없음). GitHub 연결은 repo 소유자(백성준) 계정의 **Amplify GitHub App(ap-northeast-2, `helpnest-front` 만 선택)** + PAT 로 `update-app` — 콘솔에서 앱을 새로 만들면 도메인(appId)이 바뀌어 CORS 를 다시 맞춰야 한다. 빌드: Node **22**(Live package updates), `amplify.yml` 없음(자동 감지). 빌드 환경변수 4개는 §7.1 |
-| S3 | 첨부 (Private + Presigned URL) | 버킷 `helpnest-attachments-prod-2026`, 퍼블릭 차단, 버전관리 없음. **CORS: Amplify origin 의 `GET` 만** 허용(presigned URL 을 `fetch` 로 받음) |
+| **Amplify Hosting** | Next.js 프론트 (PRD Q9) | 앱 `helpnest-front`(WEB_COMPUTE). GitHub `helpnest-front` `main` 만 연결 → main 머지 시 자동 빌드·배포(dev 자동 배포 없음). GitHub 연결은 repo 소유자(백성준) 계정의 **Amplify GitHub App(ap-northeast-2, `helpnest-front` 만 선택)** + PAT 로 `update-app` — 콘솔에서 앱을 새로 만들면 도메인(appId)이 바뀌어 CORS 를 다시 맞춰야 한다. 빌드: Node **22**(Live package updates), `amplify.yml` 없음(자동 감지). 빌드 환경변수 4개는 §7.1. **커스텀 도메인** `helpnest.kro.kr` + `www`(Amplify 관리형 인증서) — 리다이렉트 규칙(앱 `customRules`) `www` → apex, Amplify 기본 도메인 → apex 모두 301. `FRONT_ORIGIN` 이 값 하나라 브라우저 Origin 을 apex 하나로 모은다 |
+| S3 | 첨부 (Private + Presigned URL) | 버킷 `helpnest-attachments-prod-2026`, 퍼블릭 차단, 버전관리 없음. **CORS: 프론트 origin 의 `GET` 만** 허용(presigned URL 을 `fetch` 로 받음) — `https://helpnest.kro.kr` + 이전 Amplify 기본 도메인 |
 | SES | 결과/설문·답변 알림·재설정 메일 | 도메인 `helpnest.kro.kr` 인증(Easy DKIM), **프로덕션 액세스 승인**(10/6). 발신 `no-reply@helpnest.kro.kr` |
+| DNS | 내도메인.한국(`kro.kr` 무료 하위 도메인) | `helpnest.kro.kr` 고급설정(DNS) **별칭(CNAME) 6개**: SES DKIM 3개(`*._domainkey`), ACM 인증서 검증 1개(`_…`), `www` → Amplify CloudFront, apex(호스트 비움) → Amplify CloudFront. **하나도 지우지 않는다** — DKIM 은 메일 발송, ACM 검증은 인증서 자동 갱신에 계속 쓰인다. 저장은 보안코드 입력 후 `수정하기`. 맨 앞 `_` 가 빠진 채 저장된 적이 있으니(10/8) 저장 후 권한 NS(`nslookup -type=CNAME <이름> 1.ns.dnsze.com`)로 확인 |
 | IAM | EC2 인스턴스 Role `helpnest-ec2-role` | `s3:PutObject/GetObject/DeleteObject`(운영 버킷 한정) + `ses:SendEmail`. 앱은 키 없이 SDK 기본 체인으로 Role 사용 |
 | 연결 확인 | 배포 전후 | 로컬: `AWS_LIVE=true AWS_PROFILE=<프로필> SES_FROM_EMAIL=… SES_TEST_TO=… ./mvnw test -Dtest=AwsLiveTest`(10/6 2/2). 운영: EC2 Role 로 S3 업로드·presigned GET·삭제 + 앱 경로 SES 실수신(10/8) |
 | 비밀값 | EC2 env 파일 / Amplify 환경변수 | 커밋 금지. `PROXY_SECRET` 처럼 두 곳이 같아야 하는 값은 사람이 옮기지 않고 생성 즉시 두 곳에 넣고 해시 앞자리로 대조 |
@@ -340,7 +341,7 @@ public repo 라서 EC2 IP·인스턴스 ID, RDS 엔드포인트, 보안그룹 ID
 | 환경변수만 변경 | 백엔드: env 파일 수정(백업 `.bak-<시각>`) → `sudo systemctl restart helpnest-back`. 프론트: Amplify 환경변수 수정 → **재빌드해야 반영**(빌드 결과물에 고정) |
 | 코드 + 환경변수가 함께 바뀌는 릴리스 | **환경변수를 먼저** 두 곳에 넣고 → 머지·배포. 새 값을 읽지 않는 이전 버전에는 넣어 둬도 영향 없음 (예: back #107·front #59 의 `PROXY_SECRET`) |
 | Amplify 환경변수를 CLI 로 변경 | `aws amplify update-app --environment-variables` 는 **전체를 덮어쓴다** — 기존 키(`_LIVE_UPDATES` 포함)를 모두 함께 넣는다. 값에 쉼표·따옴표가 있으면 `--cli-input-json file://…` |
-| `FRONT_ORIGIN`(Amplify 도메인) 변경 | EC2 env `FRONT_ORIGIN` + S3 버킷 CORS 를 함께 바꾼다(첨부 업로드·`/ws`·메일 링크) |
+| `FRONT_ORIGIN`(프론트 도메인) 변경 | S3 버킷 CORS 에 새 origin 을 **먼저 추가** → EC2 env `FRONT_ORIGIN` 수정·재시작(`/ws`·CORS·메일 링크) → 이전 주소는 Amplify 리다이렉트로 새 주소에 모은다. 쿠키 도메인이 바뀌므로 사용자는 한 번 다시 로그인 (10/8 `helpnest.kro.kr` 전환) |
 | `PROXY_SECRET` 교체 | `openssl rand -hex 32` → EC2 env + Amplify 환경변수에 같은 값 → 백엔드 재시작 + Amplify 재빌드. 사이에는 Amplify 경유 요청이 서버 IP 하나로 묶인다 |
 
 ### 8.2 운영 확인 기록 (10/8 스모크 테스트)
