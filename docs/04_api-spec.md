@@ -223,3 +223,15 @@
 - `null` 은 빈 칸. 쉼표·따옴표·개행이 있는 셀은 `"..."` 로 감싸고 `"` 는 `""`
 - **수식 주입 방지**: 문자열 셀이 `= + - @ 탭 CR` 로 시작하면 앞에 `'` 를 붙인다(숫자 셀은 그대로라 음수 증감률도 숫자)
 - 파일명은 `Content-Disposition: attachment` 로 내려가지만, 프론트는 같은 규칙으로 직접 만든다(헤더 노출용 CORS 설정 불필요)
+
+### 13.1 상담원 상세 (백성준, back #112)
+| Method | URL | 권한 | 설명 |
+|---|---|---|---|
+| GET | `/api/dashboard/agents/{agentId}/detail` | LEAD+ | `?period=` → `{agent, teamAverage, daily[], byCategory[], byPriority[], tickets[], surveys[]}`. 없는 상담원 404 `MEMBER_NOT_FOUND` |
+
+- `period`·집계 대상(기간 내 접수)·단위·`null` 규칙은 위 대시보드 규칙과 같다. `agent` 는 `agents/me` 와 같은 `AgentStat` 1행
+- `teamAverage` = `/api/dashboard/agents` 목록(활성 AGENT 전원, 0건 포함)의 **상담원 평균** `{agentCount, assignedCount, inProgressCount, resolvedToday, avgFirstResponseMin, avgResolveHour, slaBreachRate, avgRating}` — 건수는 전원 평균(소수 1자리), 시간·비율·만족도는 값이 있는 상담원만 평균(없으면 `null`)
+- `daily[]` = `{day, received, resolved, avgFirstResponseMin}` — 기간 시작~오늘의 **서울 날짜**별 1행(티켓 없는 날도 0). `received`·`avgFirstResponseMin` 은 그날 접수분, `resolved` 는 그날 해결분
+- `byCategory[]`·`byPriority[]` = `{key, count, avgResolveHour, slaBreachRate}`, 건수 많은 순
+- `tickets[]` = 기간 내 접수 담당 티켓 최근 20건 `{ticketId, ticketNo, title, status, priority, category, slaBreached, createdAt}`
+- `surveys[]` = 기간 내 **제출된** 담당 티켓 설문 최근 20건 `{ticketId, ticketNo, rating, comment, submittedAt}`
