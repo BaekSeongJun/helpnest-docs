@@ -28,6 +28,12 @@
 | [docs/09_screen-spec.md](docs/09_screen-spec.md) | 화면 목록(ID·경로·권한·담당·구성·API), 사이트맵, 사용자 흐름 | 전원 |
 | [docs/10_coding-conventions.md](docs/10_coding-conventions.md) | Front/Back 코딩 컨벤션, 테스트, GitHub Actions CI | 전원 |
 
+## 배포
+- 서비스: https://helpnest.kro.kr
+- API: https://d1rf8nrptjrzmx.cloudfront.net (`/actuator/health`)
+- 구성·운영 절차: [docs/02_architecture.md §8](docs/02_architecture.md#8-aws-배포-신수진-sprint-4)
+- 데모 계정: 역할별(고객·상담원·팀장·관리자) 시연 계정을 Final 전에 새로 만들어 안내합니다. 비밀번호는 README 에 적지 않습니다.
+
 ## 저장소 구성
 
 > GitHub: **https://github.com/BaekSeongJun** (개인 계정, Public) — 박민재·신수진은 Collaborator로 초대받아 참여. 저장소 설정 방법은 [01 §2.3](docs/01_collaboration-rules.md#23-github-저장소-설정-3개-repo-모두-sprint-0에-백성준이-설정)

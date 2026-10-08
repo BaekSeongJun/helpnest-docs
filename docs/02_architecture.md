@@ -83,7 +83,7 @@ flowchart LR
 | 로컬 개발 | `localhost:3000/api/*` → rewrites → `localhost:8080` | 동일 | 배포와 같은 구조로 개발 |
 
 - 요청 제한(RateLimitFilter)은 **실제 클라이언트 IP** 기준으로 센다. CloudFront 는 받은 `X-Forwarded-For` 뒤에 덧붙이므로 왼쪽 값은 위조할 수 있다 → `server.forward-headers-strategy: none` 으로 원문을 받아 **오른쪽에서** 고른다(back #105 실측). CloudFront 직접 호출은 오른쪽 1번째, Amplify 경유(`proxy.ts` 가 붙인 `X-Helpnest-Proxy` 비밀 헤더가 `PROXY_SECRET` 과 같을 때만)는 오른쪽 3번째(`클라이언트, Amplify CloudFront, Amplify 컴퓨트`).
-- CSV 다운로드는 수 MB 미만이라 프록시 경유로 충분 (5.72MB를 넘을 정도로 커지면 직접 호출로 변경).
+- CSV 다운로드는 프록시 경유 (5.72MB를 넘을 정도로 커지면 직접 호출로 변경). 단 `text/*` 응답은 Amplify 가 본문을 다시 써 BOM 이 사라지고 Content-Length 는 그대로라 다운로드가 멈춘다 → `application/octet-stream` 으로 보낸다(back #104).
 
 ---
 
