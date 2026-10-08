@@ -22,7 +22,7 @@ flowchart TB
     CS01[티켓함] --> CS02[티켓 상세]
     CS02 --> CS07[고객 이력]
     CS03[채팅 상담]
-    CS04[대시보드]
+    CS04[대시보드] --> CS09[상담원 상세] --> CS02
     CS05[월간 리포트]
     CS06[설문 결과] --> CS02
   end
@@ -72,6 +72,7 @@ flowchart TB
 | CS-06 | 설문 결과 | `/console/surveys` | AGENT(본인), LEAD+ | 백성준 | 요약 카드(응답률·평균 별점·별점 분포), 필터(**발송 기간**·별점·상담원(LEAD+만)·유형 — 값은 URL 쿼리에 보존, 요약은 별점 필터를 받지 않음), 표(티켓번호, 고객, 상담원, 별점, 의견(`PlainText`), 제출일) → 행 클릭 시 CS-02. AGENT 는 서버가 본인 담당분으로 고정 | `GET /console/surveys`, `/summary` |
 | CS-07 | 고객 이력 | `/console/customers/[key]` | AGENT+ | 백성준 | 고객 정보, 총 문의 수, 평균 만족도, 문의 목록 | `GET /console/customers/{key}/tickets` |
 | CS-08 | 알림 패널 | Header 드롭다운 | 로그인 | 박민재 | 미읽음 수, 최근 20개, 모두 읽음 | `GET /notifications`, STOMP |
+| CS-09 | 상담원 상세 | `/console/agents/[id]` | LEAD+ | 백성준 | CS-04 상담원 표에서 진입. 기간 필터(기본 7일), KPI 카드(본인 값 + **팀 평균** 보조 문구), 일별 접수·해결 막대, 유형·우선순위별 건수·평균 해결·SLA 위반율, 최근 담당 티켓·설문 20건 → 행 클릭 시 CS-02 | `GET /dashboard/agents/{id}/detail` |
 
 `*` 전체 탭은 LEAD+만
 
@@ -101,3 +102,4 @@ flowchart TB
 | CU-07 문의 상세(백성준) | `TicketTimeline`(박민재) |
 | CS-03 채팅 상담(박민재) | `TemplatePicker`(백성준) |
 | Header(백성준) | `NotificationBell`(박민재) |
+| CS-09 상담원 상세(백성준) | `KpiGrid`, `formatHours`·`formatRating`(신수진 대시보드) |
