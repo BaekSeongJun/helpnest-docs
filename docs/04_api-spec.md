@@ -53,6 +53,7 @@
 
 > - 계정 관리 제약: 본인 역할 변경·비활성화 금지(`MEMBER_SELF_CHANGE_FORBIDDEN`), 고객 ↔ 직원(AGENT·LEAD·ADMIN) 역할 전환 금지(`MEMBER_ROLE_NOT_ALLOWED`). AGENT 가 아닌 역할이 되면 `available=false`.
 > - 역할·상태가 바뀌면 그 회원의 Refresh 토큰을 전부 폐기한다 → 다음 재발급부터 새 권한/차단 적용. 이미 발급된 Access 토큰은 만료(30분)까지 유효.
+> - 대상 기준 실패 제한(IP 제한은 §7 표): `login` 은 이메일(대소문자 무시), `guest` 는 티켓번호 기준 **실패 10분 10건** → 그 뒤로는 맞는 비밀번호도 창이 끝날 때까지 `429 COMMON_TOO_MANY_REQUESTS`. 없는 이메일·티켓도 똑같이 센다(열거 방지). 위조 `X-Forwarded-For` 로 IP 제한을 우회해도 한 대상에 대입할 수 없게 한다(back #105).
 
 ## 3. 첨부 (백성준)
 | Method | URL | 권한 | 설명 |
