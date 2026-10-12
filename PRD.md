@@ -242,8 +242,8 @@ stateDiagram-v2
 | 현재 \ 다음 | ASSIGNED | IN_PROGRESS | RESOLVED | CLOSED | 수행자 |
 |---|:-:|:-:|:-:|:-:|---|
 | RECEIVED | ✅ | ❌ | ❌ | ❌ | SYSTEM(자동배정), LEAD/ADMIN |
-| ASSIGNED | ✅(재배정) | ✅ | ❌ | ❌ | 담당 AGENT, LEAD/ADMIN |
-| IN_PROGRESS | ✅(재배정) | - | ✅ | ❌ | 담당 AGENT, LEAD/ADMIN |
+| ASSIGNED | ✅(재배정) | ✅ | ❌ | ❌ | 담당 AGENT, LEAD/ADMIN (재배정은 LEAD/ADMIN만) |
+| IN_PROGRESS | ✅(재배정) | - | ✅ | ❌ | 담당 AGENT, LEAD/ADMIN (재배정은 LEAD/ADMIN만) |
 | RESOLVED | ❌ | ✅(고객 답글) | - | ✅ | SYSTEM, CUSTOMER |
 | CLOSED | ❌ | ❌ | ❌ | - | 종료(불변) |
 
