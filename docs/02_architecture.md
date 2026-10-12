@@ -203,7 +203,7 @@ com.helpnest
 | `TicketClassificationPort` | 박민재 | 신수진 | `applyClassification(ticketId, category, priority, sentiment)` / `applyClassificationFailed(ticketId)` → 우선순위·SLA 재계산 후 자동 배정 |
 | `TicketQueryPort` | 박민재 | 백성준, 신수진 | `getTicketSummary(ticketId)`, `findResolvedReplies(category, limit)` (AI 초안 컨텍스트) |
 | `AttachmentPort` | 백성준 | 박민재 | `linkToTicket(List<attachmentId>, ticketId, replyId)` |
-| `FaqQueryPort` | 백성준 | 신수진 | `findPublishedByCategory(category, keyword, limit)` |
+| `FaqQueryPort` | 백성준 | 신수진 | `findPublishedByCategory(category, keyword, limit)`, `findPublishedByQuestion(question, limit)`(AI 상담 근거 — 문장과 단어가 겹치는 순) |
 | `MailSender` | 신수진 | 백성준, 박민재 | `sendResolvedMail(ResolvedMailCommand)` (고객명, 이메일, 티켓번호, 답변 요약, 설문 링크) / `sendAgentReplyMail(AgentReplyMailCommand)`(박민재) / `sendPasswordResetMail(PasswordResetMailCommand)`(백성준, 회원·비회원 공용) |
 | `FileStorage` | 신수진 | 백성준 | `upload(MultipartFile, keyPrefix)` → key(`keyPrefix/UUID.ext`), `getDownloadUrl(key)`(prod presigned GET 10분 / local `null`), `load(key)`(local 스트림 전용), `delete(key)` |
 | `AiResultPort` | 신수진 | 박민재 | `markOverridden(ticketId, memberId, category, priority)` (상담원 수동 분류 수정 기록) |
