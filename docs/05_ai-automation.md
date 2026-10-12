@@ -6,12 +6,13 @@
 | AI-1 | 문의 자동 분류 (유형·긴급도·감정) | `TicketCreatedEvent` (비동기) / 재분류 버튼 | TICKET_AI_RESULT 저장 → `TicketClassificationPort` 로 티켓 반영 |
 | AI-2 | 답변 초안 생성 | 상담원 "AI 초안" 버튼 | AI_DRAFT 저장 → 에디터에 삽입 → 상담원 수정 후 발송 |
 | AI-3 | 결과 메일·설문 자동 발송 | `TicketStatusChangedEvent(RESOLVED)` → 백성준 설문 생성 → 신수진 `MailSender` | MAIL_LOG 저장 |
+| AI-4 | 고객 AI 상담 (FR-AI-07) | 고객 `/chat` 질문 → `POST /api/ai/chat` | 답변 + 참고 FAQ, 근거 없으면 상담원 연결 안내. **저장 없음** |
 
 ## 2. LLM 추상화
 ```
 infra/llm/LlmClient.java            // interface: <T> T structured(String system, String user, Class<T> type)
 infra/llm/SpringAiLlmClient.java    // Spring AI ChatClient 기반 구현
-domain/ai/service/ClassifyService, DraftService
+domain/ai/service/ClassifyService, DraftService, AiChatService
 ```
 - 제공자는 `application-ai.yml` + 환경변수(`LLM_PROVIDER`, `LLM_API_KEY`, `LLM_MODEL`)로 교체 (PRD Q11).
 - Spring AI **2.0.1** 사용 (Spring Boot 4.0/4.1 호환 GA 라인, `spring-ai-bom`으로 버전 관리) — [아키텍처 §1](02_architecture.md#1-기술-스택-백성준).
@@ -152,3 +153,40 @@ domain/ai/service/ClassifyService, DraftService
 - 비용: `gemini-3.5-flash-lite` 는 무료 등급 대상(입력·출력 무료, 유료 시 1M 토큰당 입력 $0.30·출력 $2.50, 2026-10-01 [가격표](https://ai.google.dev/gemini-api/docs/pricing) 기준). **무료 등급 전송 데이터는 Google 제품 개선에 사용**되므로 개발·시연용으로만 쓰고, 실제 고객 데이터 운영 시에는 유료 등급으로 전환한다(마스킹은 전화·이메일·카드/계좌만 가린다). 한도(RPM·RPD)는 [AI Studio](https://aistudio.google.com/rate-limit)에서 확인.
 - 운영 트래픽(접수 시 1건씩)은 분당 한도에 걸리지 않지만, 대량 재분류·데모 시연 전에는 한도를 확인한다. 프롬프트·모델을 바꾸면 위 명령으로 다시 측정해 이 표를 갱신한다.
 - LLM 응답 시간·실패율은 TICKET_AI_RESULT의 `latency_ms`, `status`로 대시보드에서 확인(선택).
+
+## 7. AI-4 고객 AI 상담 (`AiChatService`)
+고객이 직접 읽는 답변이라 AI-2(상담원이 검토)보다 **"근거 없으면 답하지 않기"** 가 우선이다. 채팅방 밖에서 처리해 방 상태·대기열·배정은 건드리지 않는다(화면·`aiTranscript` 는 박민재, [04 §10](04_api-spec.md)).
+
+### 7.1 처리 규칙
+| 단계 | 규칙 | 결과 |
+|---|---|---|
+| 권한 | `hasRole('CUSTOMER')` — 비회원 토큰·직원은 403 (채팅과 같음) | 403 |
+| 요청 제한 | `RateLimiter.tryAcquire("ai-chat:" + memberId, 30, 10분)` — 근거 없는 질문도 센다 | 429 `COMMON_TOO_MANY_REQUESTS` |
+| 근거 검색 | `FaqQueryPort.findPublishedByQuestion(question, 3)` (공개 FAQ, 단어 일치) | 없으면 **LLM 호출 없이** handoff |
+| LLM 호출 | 동기, 질문 + 참고 FAQ + 최근 대화 6개(항목당 300자) | 예외·빈 `answer` → handoff |
+| 응답 | `{answer, references:[{faqId, question}], handoff:false}` | - |
+
+**handoff** = 200 + `{answer: 고정 문구, references: [], handoff: true}`. 고정 문구: "이 질문은 상담원이 더 정확하게 안내해 드릴 수 있어요. [상담원 연결]을 눌러 주세요." 오류 응답을 쓰지 않아 화면은 한 경로만 처리한다(LLM 장애도 같은 화면).
+
+### 7.2 프롬프트
+**System**
+```
+너는 HelpNest 고객센터의 AI 상담원이다. 고객이 직접 읽는 답변을 쓴다.
+- [참고 FAQ]에 있는 내용만으로 답한다. FAQ 밖의 정책·금액·날짜·절차는 절대 지어내지 않는다.
+- [참고 FAQ]로 답할 수 없는 질문이면 answer 를 빈 문자열로 둔다(상담원에게 넘긴다).
+- 정중한 존댓말, 2~4문장. 개인 주문·계정 조회가 필요한 질문은 상담원 연결을 권한다.
+응답은 JSON {"answer": "..."} 하나만.
+```
+**User** — 질문을 맨 앞에 둔다(입력 4,000자 초과분은 뒤에서 잘리므로 긴 대화가 질문을 밀어내지 않게).
+```
+[고객 질문] {question}
+[참고 FAQ]
+- FAQ#{id}: Q {question} / A {answer}
+[이전 대화]
+- USER|AI: {content}
+```
+
+### 7.3 운영 메모
+- 대화는 저장하지 않는다(화면이 매 요청에 `history` 를 보냄). [상담원 연결] 시 화면이 대화를 이어 붙여 `aiTranscript`(2,000자 이하)로 넘기고, 채팅방 첫 메시지로만 남는다(박민재 #136).
+- `MockLlmClient` 는 근거가 있을 때 고정 안내 문장을 돌려준다(로컬 데모용).
+- 비용·한도: 고객 질문마다 1회 호출되므로 무료 등급 분당 한도에 AI-1 보다 먼저 닿는다. 시연 전 [AI Studio](https://aistudio.google.com/rate-limit) 한도를 확인하고, 회원당 한도(30회/10분)를 바꾸면 04 §12 문구도 함께 고친다. §6.1 의 무료 등급 데이터 사용 주의가 그대로 적용된다.
