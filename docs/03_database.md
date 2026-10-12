@@ -30,6 +30,7 @@ erDiagram
 | 테이블 | 소유 | 구분 | 설명 |
 |---|:-:|---|---|
 | MEMBER | 백성준 | 핵심 | 회원/상담원/팀장/관리자 |
+| MEMBER_SOCIAL | 백성준 | 보조 | 회원 ↔ 소셜 계정(구글·카카오) 연결 |
 | REFRESH_TOKEN | 백성준 | 보조 | JWT Refresh 저장·폐기 |
 | PASSWORD_RESET_TOKEN | 백성준 | 보조 | 회원 비밀번호·비회원 조회 비밀번호 재설정 링크 토큰 |
 | ATTACHMENT | 백성준 | 핵심 | 첨부 메타데이터 (파일 본체는 S3/로컬) |
@@ -72,7 +73,7 @@ erDiagram
 CREATE TABLE member (
   member_id      BIGSERIAL PRIMARY KEY,
   email          VARCHAR(100) NOT NULL UNIQUE,
-  password       VARCHAR(100) NOT NULL,              -- BCrypt
+  password       VARCHAR(100),                       -- BCrypt. 소셜로만 가입한 회원은 NULL
   name           VARCHAR(50)  NOT NULL,
   phone          VARCHAR(20),
   role           VARCHAR(20)  NOT NULL CHECK (role IN ('CUSTOMER','AGENT','LEAD','ADMIN')),
@@ -92,6 +93,16 @@ CREATE TABLE refresh_token (
   revoked     BOOLEAN NOT NULL DEFAULT FALSE,
   rotated_at  TIMESTAMPTZ,                       -- 회전(재발급)으로 폐기된 시각. 30초 안 재사용은 응답 유실·동시 탭으로 보고 재발급. 로그아웃·일괄 폐기는 NULL
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 소셜 로그인 연결 (FR-AUTH-11). 한 회원이 구글·카카오를 모두 연결할 수 있다
+CREATE TABLE member_social (
+  social_id         BIGSERIAL PRIMARY KEY,
+  member_id         BIGINT      NOT NULL REFERENCES member(member_id),
+  provider          VARCHAR(20) NOT NULL CHECK (provider IN ('GOOGLE','KAKAO')),
+  provider_user_id  VARCHAR(100) NOT NULL,     -- 제공자 쪽 사용자 id = 로그인 키 (이메일은 바뀔 수 있다)
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (provider, provider_user_id)
 );
 
 CREATE TABLE password_reset_token (

@@ -39,6 +39,8 @@
 | POST | `/api/auth/login` | 공개 | → 본문 `{accessToken, member}` + `Set-Cookie: refreshToken`(httpOnly, Secure, SameSite=Lax, Path=/). 이메일 인증 전이면 `403 AUTH_EMAIL_NOT_VERIFIED`(비밀번호가 맞을 때만 — 틀리면 일반 401) → 프론트는 인증 안내·재발송 화면 |
 | POST | `/api/auth/refresh` | 공개(쿠키) | 쿠키의 Refresh로 Access 재발급 + Refresh 회전(새 쿠키) → `{accessToken, member}` |
 | POST | `/api/auth/logout` | 로그인 | Refresh 폐기 + 쿠키 삭제 |
+| GET | `/api/auth/oauth2/authorize/{google\|kakao}` | 공개 | 소셜 로그인 시작 (브라우저 이동용, 항상 302). 제공자 인가 화면으로 보내고 `oauthState` 쿠키(httpOnly, 5분, `Path=/api/auth/oauth2`)를 심는다. id·secret 이 설정되지 않은 제공자는 `/login?error=AUTH_OAUTH_FAILED` |
+| GET | `/api/auth/oauth2/callback/{google\|kakao}` | 공개 | 제공자가 `?code&state` 로 돌려보내는 주소 (항상 302). `state` 가 쿠키와 같을 때만 코드 → 토큰 → 사용자 정보. 성공: `Set-Cookie: refreshToken`(로그인과 동일) + `{FRONT_ORIGIN}/` — Access 는 프론트가 `/api/auth/refresh` 로 받는다. 실패: `{FRONT_ORIGIN}/login?error=` + `AUTH_OAUTH_FAILED`(취소·state 불일치·제공자 오류) / `AUTH_OAUTH_EMAIL_REQUIRED`(이메일 미동의·미확인) / `AUTH_OAUTH_STAFF_NOT_ALLOWED`(직원 계정 이메일) / `AUTH_INACTIVE_MEMBER` |
 | POST | `/api/auth/guest` | 공개 | `{ticketNo, email, password}` → `{guestToken, ticketId, expiresIn}`(초, 30분). 쿠키 없음 — 프론트 메모리에 두고 `Authorization: Bearer`. 토큰: `sub=guest:{ticketId}`, `role=GUEST`, `ticketId` 클레임. 티켓 없음·이메일 불일치·회원 티켓·비밀번호 오류는 모두 같은 `401 AUTH_GUEST_INVALID`(열거 방지, 실패 경로도 BCrypt 1회). 이메일 대소문자 무시. Guest 토큰으로 회원 API 호출 시 403 |
 | POST | `/api/auth/password/reset-request` | 공개 | `{email}` → 항상 200 (계정 존재 여부 비노출). 활성 회원일 때만 30분·1회용 링크 `{FRONT_ORIGIN}/reset-password?token=` 메일 — 커밋 후 비동기 발송이라 응답 시간에 메일 전송이 섞이지 않음 |
 | POST | `/api/auth/password/reset` | 공개 | `{token, newPassword(8~64)}` → 비밀번호 교체 + Refresh 전부 폐기, 같은 회원의 다른 링크도 사용 처리. 없음·만료·사용됨은 모두 `400 AUTH_RESET_TOKEN_INVALID` |
