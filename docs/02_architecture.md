@@ -139,7 +139,7 @@ src/
 ### 3.1 공용 레이아웃 규칙
 - **Header**(백성준): 로고, 사용자 메뉴, 알림 벨 **슬롯**. 알림 벨 컴포넌트 자체는 박민재가 `components/notification/NotificationBell.tsx`로 만들고, 백성준이 Header에 1회 배치한다.
 - **Sidebar**(백성준): `config/menu.ts`의 역할별 메뉴를 렌더링. 메뉴 추가는 백성준에게 CR.
-- **Footer**(백성준): 고객 화면 하단 정보.
+- 고객·비로그인 화면도 콘솔과 같은 셸(헤더 + 사이드바)을 쓴다 — 푸터는 없앴다(front #74).
 - 각 담당자는 `(main)/` 아래 **자기 페이지 폴더만** 만든다 → 레이아웃은 자동 적용.
 - 다른 담당자 페이지에 들어가는 컴포넌트는 "컴포넌트 제공자가 만들고, 페이지 소유자가 import" 방식.
   - 티켓 상세(박민재) ← `AiAnalysisPanel`, `AiDraftButton`(신수진), `TemplatePicker`, `CustomerHistoryPanel`(백성준)
