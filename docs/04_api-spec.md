@@ -49,6 +49,7 @@
 | GET | `/api/members/me` | 로그인 | 내 정보 |
 | PATCH | `/api/members/me` | 로그인 | `{name, phone}` 내 정보 수정 → 내 정보. `phone` 을 비우면 삭제, 검증은 회원가입과 동일 |
 | PATCH | `/api/members/me/password` | 로그인 | `{currentPassword, newPassword(8~64)}` → Refresh 토큰 전체 폐기(프론트는 로그아웃 처리). 현재 비밀번호 불일치 `400 AUTH_PASSWORD_MISMATCH` |
+| DELETE | `/api/members/me` | CUSTOMER | 회원 탈퇴. 계정 `INACTIVE` + Refresh 토큰 전체 폐기(프론트는 로그아웃 처리). 이후 로그인·재발급·소셜 로그인은 `AUTH_INACTIVE_MEMBER`. 개인정보·이메일은 남는다(재가입 불가, 복구는 ADMIN 계정 관리). 직원은 403 |
 | PATCH | `/api/members/me/availability` | AGENT | `{available: true}` → 내 정보. 역할이 AGENT 가 아니면(LEAD·ADMIN 포함) `403 MEMBER_NOT_AGENT` |
 | GET | `/api/console/agents` | AGENT+ | 배정 드롭다운용 활성 상담원(상담 불가 포함) 이름순 → `[{memberId, name, available, activeCount}]`. `activeCount` 는 ASSIGNED·IN_PROGRESS 티켓 수(자동 배정과 같은 기준). 이메일·연락처는 주지 않는다 (CR #44) |
 | GET | `/api/admin/members` | ADMIN | 목록 `?role=&status=&page=&size=` (기본 가입일 최신순 20개) → 페이지 `{memberId, email, name, phone, role, status, available, createdAt}` |
