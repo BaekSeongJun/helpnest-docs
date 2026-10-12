@@ -76,7 +76,7 @@
 |---|---|---|---|
 | GET | `/api/faqs` | 공개 | `?category=&keyword=&page=&size=` → 페이지 `{faqId, category, question, answer, published, viewCount, createdAt, updatedAt}`. **공개 글만**, 기본 조회수 높은 순 20개. keyword 는 질문·답변 부분 일치(대소문자 무시) |
 | GET | `/api/faqs/{id}` | 공개 | 조회수 +1 후 반환 (아코디언을 열 때 호출). 비공개·없는 글은 `404` |
-| GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천 → `[FaqResponse]`(목록과 같은 필드) 공개 글 중 질문·답변 부분 일치, 조회수 높은 순 최대 3건. `q` 가 공백 제외 2자 미만이면 빈 배열 |
+| GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천 → `[FaqResponse]`(목록과 같은 필드) 공개 글 최대 3건. `q` 를 단어로 나눠 채점한다: 물음말·서술어("언제", "되나요")는 빼고, 끝의 어미·조사를 뗀 형태로도 찾으며("환불은"·"환불되나요" → "환불"), 질문(제목)에 있으면 2점·답변에만 있으면 1점, 점수가 같으면 조회수 순. 채점할 단어가 없으면 빈 배열. AI 상담 근거(`FaqQueryPort.findPublishedByQuestion`)도 같은 채점 |
 | GET | `/api/admin/faqs` | LEAD, ADMIN | 관리 표용 목록 — 비공개 포함, 기본 최신순. 쿼리는 `/api/faqs` 와 같음 |
 | POST/PUT/DELETE | `/api/admin/faqs[/{id}]` | LEAD, ADMIN | `{category, question(≤300), answer(≤5,000), published?}` (published 생략 시 공개). POST `201`, DELETE 는 실제 삭제 |
 | GET | `/api/templates` | AGENT+ | `?category=&keyword=&page=&size=` → 페이지 `{templateId, category, title, content, active, createdAt, updatedAt}`. **사용 중(active)만**, 기본 제목순 50개. keyword 는 제목·본문 부분 일치(대소문자 무시). `TemplatePicker` 용 |
