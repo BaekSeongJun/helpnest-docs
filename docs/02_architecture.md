@@ -195,6 +195,7 @@ com.helpnest
 | `TicketStatusChangedEvent(ticketId, from, to, actorId)` | 박민재 | 백성준 `SurveyListener`, 박민재 알림 | to=RESOLVED → 설문 생성(재해결이면 재발급) → 메일 발송 / RESOLVED→IN_PROGRESS(재문의) → 미제출 설문 만료 |
 | `ReplyCreatedEvent(ticketId, replyId, writerType, isInternal)` | 박민재 | 박민재 알림 | 고객 답글 → 상담원 알림 / 상담원 공개 답변 → 고객 웹 알림(회원) + `MailSender.sendAgentReplyMail`(신수진) |
 | `SurveySubmittedEvent(ticketId, rating)` | 백성준 | 박민재 `TicketCloseListener` | 티켓 CLOSED |
+| `MemberSignedUpEvent(memberId, email, name)` | 백성준 | 신수진 이메일 인증(`domain/auth/verify`) | 인증이 필요한 가입(PENDING)·인증 전 재가입 때 발행 → `AFTER_COMMIT` + `@Async` 로 `EMAIL_VERIFY` 토큰 발급(`PasswordResetService.issue`) + 인증 메일. 인증을 끈 환경에서는 발행하지 않음 |
 
 ### 5.2 포트 (인터페이스 소유 = 구현자)
 | 포트 | 소유/구현 | 호출자 | 시그니처 |
@@ -298,6 +299,7 @@ volumes:
 | `DB_URL`·`DB_USERNAME`·`DB_PASSWORD` | RDS 엔드포인트·계정 | 기동 실패 |
 | `FRONT_ORIGIN` | Amplify 도메인 `https://main.xxxx.amplifyapp.com` (끝 `/` 없이) | 기동 실패. 값이 틀리면 첨부 업로드·WebSocket 이 CORS 로 막히고 메일 링크가 엉뚱한 곳을 가리킨다 |
 | `REFRESH_COOKIE_SECURE` | `true` (생략 시 기본 `true`) | — |
+| `EMAIL_VERIFICATION` | `true` = 가입 시 이메일 인증 필수. **SES 가 샌드박스면 `false`** (인증 메일이 검증된 주소로만 나가 가입이 막힌다) | 생략 시 `false` — 가입 즉시 로그인 가능 |
 | `PROXY_SECRET` | 32바이트 이상 랜덤, **Amplify 와 같은 값** | 기동은 된다. Amplify 경유 요청이 전부 Amplify 서버 IP 하나로 묶여 로그인·티켓 접수 요청 제한을 전체 사용자가 함께 쓴다 |
 
 **프론트(Amplify)** — 세 값 모두 **빌드 결과물에 고정**된다(rewrites 대상, `NEXT_PUBLIC_*` 인라인). Amplify 콘솔 환경변수에 넣고, **값을 바꾸면 재빌드**해야 반영된다.

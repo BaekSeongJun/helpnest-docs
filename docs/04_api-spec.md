@@ -33,8 +33,10 @@
 ## 2. 인증·회원 (백성준)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| POST | `/api/auth/signup` | 공개 | 고객 회원가입 |
-| POST | `/api/auth/login` | 공개 | → 본문 `{accessToken, member}` + `Set-Cookie: refreshToken`(httpOnly, Secure, SameSite=Lax, Path=/) |
+| POST | `/api/auth/signup` | 공개 | 고객 회원가입. 이메일 인증이 켜져 있으면(`EMAIL_VERIFICATION=true`) `status=PENDING` 으로 저장되고 인증 메일이 나간다 — 인증 전 같은 이메일로 다시 가입하면 덮어쓰고 재발송(`409 MEMBER_EMAIL_DUPLICATED` 는 인증을 마친 이메일만) |
+| POST | `/api/auth/email/verify` | 공개 | (신수진, back #117) `{token}` → 회원 `ACTIVE`. 없음·만료·사용됨은 모두 `400 AUTH_RESET_TOKEN_INVALID` |
+| POST | `/api/auth/email/resend` | 공개 | (신수진, back #117) `{email}` → 항상 200. 인증 전(PENDING) 회원일 때만 30분·1회용 링크 `{FRONT_ORIGIN}/verify-email?token=` 재발송 |
+| POST | `/api/auth/login` | 공개 | → 본문 `{accessToken, member}` + `Set-Cookie: refreshToken`(httpOnly, Secure, SameSite=Lax, Path=/). 이메일 인증 전이면 `403 AUTH_EMAIL_NOT_VERIFIED`(비밀번호가 맞을 때만 — 틀리면 일반 401) → 프론트는 인증 안내·재발송 화면 |
 | POST | `/api/auth/refresh` | 공개(쿠키) | 쿠키의 Refresh로 Access 재발급 + Refresh 회전(새 쿠키) → `{accessToken, member}` |
 | POST | `/api/auth/logout` | 로그인 | Refresh 폐기 + 쿠키 삭제 |
 | POST | `/api/auth/guest` | 공개 | `{ticketNo, email, password}` → `{guestToken, ticketId, expiresIn}`(초, 30분). 쿠키 없음 — 프론트 메모리에 두고 `Authorization: Bearer`. 토큰: `sub=guest:{ticketId}`, `role=GUEST`, `ticketId` 클레임. 티켓 없음·이메일 불일치·회원 티켓·비밀번호 오류는 모두 같은 `401 AUTH_GUEST_INVALID`(열거 방지, 실패 경로도 BCrypt 1회). 이메일 대소문자 무시. Guest 토큰으로 회원 API 호출 시 403 |
@@ -130,6 +132,8 @@
 > | `POST /api/tickets`, `POST /api/attachments` | **비회원만**(Authorization 헤더 없음) 10분 5건 |
 > | `POST /api/auth/login`, `POST /api/auth/guest`(조회 비밀번호 대입 방지) | 10분 10건 |
 > | `POST /api/auth/password/reset-request`, `/api/auth/guest/reset-request` | 10분 5건 |
+> | `POST /api/auth/signup`, `/api/auth/email/resend` (메일 발송 경로) | 10분 5건 |
+> | `POST /api/auth/email/verify` | 10분 10건 |
 >
 > 본문 값 기준 제한(비회원 **동일 이메일 1시간 5건**)은 서비스에서 `RateLimiter.tryAcquire("ticket-email:" + email, 5, Duration.ofHours(1))` 호출(박민재 `TicketService`). 테스트에서는 `app.rate-limit.enabled=false`(back `src/test/resources/config/application.yml`).
 > 본문(`content`)은 일반 텍스트, 최대 5,000자. 서버는 원문 저장, 프론트는 이스케이프 출력.
