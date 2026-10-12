@@ -196,7 +196,7 @@
 | POST | `/api/console/tickets/{id}/ai/classify` | AGENT+ | 재분류 (동기, 타임아웃 10초) |
 | POST | `/api/console/tickets/{id}/ai/drafts` | 담당 AGENT, LEAD+ | 초안 생성(동기) → `{draftId, content, references[{type: FAQ\|REPLY, id, label}], model, createdAt}`. 담당 아님 403 `AI_NOT_ASSIGNEE`, LLM 실패 503 `AI_PROVIDER_UNAVAILABLE` (docs/05 §4.4) |
 | GET | `/api/console/tickets/{id}/ai/drafts` | AGENT+ | 초안 목록(최신순), 항목 형식은 POST 응답과 같음 |
-| POST | `/api/ai/chat` | CUSTOMER | AI 상담(FR-AI-07, 동기). 요청 `{question(1~500자), history?: [{role: USER\|AI, content}]}`(history 는 최근 6개까지만 사용 — 서버에 저장하지 않으므로 화면이 매번 보낸다) → `{answer, references: [{faqId, question}], handoff}`. 근거는 `FaqQueryPort.findPublishedByQuestion(question, 3)`. **근거 FAQ 가 없거나 LLM 이 실패하면 오류가 아니라 200 + `handoff: true`**(answer 는 상담원 연결 안내 고정 문구, references 빈 배열) — 화면은 한 경로만 처리한다. 요청 제한: IP 기준 10분 30회(`RateLimitFilter`) → 429 |
+| POST | `/api/ai/chat` | CUSTOMER | AI 상담(FR-AI-07, 동기). 요청 `{question(1~500자), history?: [{role: USER\|AI, content}]}`(history 는 최근 6개까지만 사용 — 서버에 저장하지 않으므로 화면이 매번 보낸다) → `{answer, references: [{faqId, question}], handoff}`. 근거는 `FaqQueryPort.findPublishedByQuestion(question, 3)`. **근거 FAQ 가 없거나 LLM 이 실패하면 오류가 아니라 200 + `handoff: true`**(answer 는 상담원 연결 안내 고정 문구, references 빈 배열) — 화면은 한 경로만 처리한다. 요청 제한: **회원 기준** 10분 30회 — 서비스에서 기존 `RateLimiter.tryAcquire("ai-chat:" + memberId, 30, Duration.ofMinutes(10))` 를 재사용한다(새 의존성 없음, IP 기준이면 같은 공유기를 쓰는 고객끼리 한도를 나눠 쓴다) → 초과 시 429 `COMMON_TOO_MANY_REQUESTS` |
 
 ## 13. 대시보드 · 리포트 (신수진)
 | Method | URL | 권한 | 설명 |
