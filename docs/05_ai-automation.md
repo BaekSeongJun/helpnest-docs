@@ -18,7 +18,7 @@ domain/ai/service/ClassifyService, DraftService, AiChatService
 - Spring AI **2.0.1** 사용 (Spring Boot 4.0/4.1 호환 GA 라인, `spring-ai-bom`으로 버전 관리) — [아키텍처 §1](02_architecture.md#1-기술-스택-백성준).
 - 키가 없거나 `LLM_PROVIDER=mock`이면 **`MockLlmClient`**(키워드 규칙 기반)로 동작 → 백성준·박민재가 LLM 키 없이도 로컬 개발 가능.
 - 기본 모델 **`gemini-3.5-flash-lite`** (`LLM_MODEL` 로 변경, Gemini 실제 호출 모델과 `TICKET_AI_RESULT.model` 기록값이 같다). 선정 근거는 [§6](#6-품질-확인).
-- 타임아웃 10초, 재시도 1회, 입력 최대 4,000자(초과 시 앞부분 사용).
+- 타임아웃 10초, 재시도 1회, 입력 최대 4,000자(초과 시 앞부분 사용). 단 AI-4 상담은 고객이 기다리므로 `structuredOnce` 로 **재시도 없음**(실패 시 대기 최대 10초).
 - **개인정보 마스킹:** 전송 전 전화번호(`010-****-1234`), 이메일(`h***@example.com`), 카드/계좌 형태 숫자열 마스킹.
 
 ## 3. AI-1 분류
@@ -163,7 +163,7 @@ domain/ai/service/ClassifyService, DraftService, AiChatService
 | 권한 | `hasRole('CUSTOMER')` — 비회원 토큰·직원은 403 (채팅과 같음) | 403 |
 | 요청 제한 | `RateLimiter.tryAcquire("ai-chat:" + memberId, 30, 10분)` — 근거 없는 질문도 센다 | 429 `COMMON_TOO_MANY_REQUESTS` |
 | 근거 검색 | `FaqQueryPort.findPublishedByQuestion(question, 3)` (공개 FAQ, 단어 일치) | 없으면 **LLM 호출 없이** handoff |
-| LLM 호출 | 동기, 질문 + 참고 FAQ + 최근 대화 6개(항목당 300자) | 예외·빈 `answer` → handoff |
+| LLM 호출 | 동기 `structuredOnce` — **재시도 없이 10초 1회**(재시도하면 실패 시 고객이 20초 기다림, back #141). 질문 + 참고 FAQ + 최근 대화 6개(항목당 300자) | 예외·타임아웃·빈 `answer` → handoff |
 | 응답 | `{answer, references:[{faqId, question}], handoff:false}` | - |
 
 **handoff** = 200 + `{answer: 고정 문구, references: [], handoff: true}`. 고정 문구: "이 질문은 상담원이 더 정확하게 안내해 드릴 수 있어요. [상담원 연결]을 눌러 주세요." 오류 응답을 쓰지 않아 화면은 한 경로만 처리한다(LLM 장애도 같은 화면).
