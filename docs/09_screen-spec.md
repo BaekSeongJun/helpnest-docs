@@ -40,7 +40,7 @@ flowchart TB
 | ID | 화면 | 경로 | 권한 | 주요 구성 | 사용 API |
 |---|---|---|---|---|---|
 | CM-01 | 로그인 | `/login` | 공개 | 이메일·비밀번호, 비밀번호 찾기·회원가입·비회원 조회 링크. 로그인 후 역할별 이동(고객 → 홈, 직원 → 티켓함) | `POST /auth/login` |
-| CM-02 | 회원가입 | `/signup` | 공개 | 이메일, 비밀번호(확인), 이름, 연락처 | `POST /auth/signup` |
+| CM-02 | 회원가입 | `/signup` | 공개 | 이메일, 비밀번호(확인), 이름, 연락처. 이메일 인증이 켜져 있으면 가입 후 "이메일 인증이 필요해요" 안내(재발송 버튼) — 인증 전 로그인 시도(CM-01)에도 같은 안내. 링크 도착 화면 `/verify-email` 은 신수진(back #117) | `POST /auth/signup` |
 | CM-03 | 비밀번호 찾기 | `/forgot-password` | 공개 | 이메일 입력 → "메일을 확인해 주세요"(계정 유무 무관 동일) | `POST /auth/password/reset-request` |
 | CM-04 | 비밀번호 재설정 | `/reset-password?token=` | 공개 | 새 비밀번호(확인), 만료 토큰 안내 | `POST /auth/password/reset` |
 | CM-05 | 403 / 404 | - | - | `EmptyState` 기반 안내 + 홈 이동 | - |
