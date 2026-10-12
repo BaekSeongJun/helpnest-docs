@@ -300,6 +300,8 @@ volumes:
 | `FRONT_ORIGIN` | Amplify 도메인 `https://main.xxxx.amplifyapp.com` (끝 `/` 없이) | 기동 실패. 값이 틀리면 첨부 업로드·WebSocket 이 CORS 로 막히고 메일 링크가 엉뚱한 곳을 가리킨다 |
 | `REFRESH_COOKIE_SECURE` | `true` (생략 시 기본 `true`) | — |
 | `EMAIL_VERIFICATION` | `true` = 가입 시 이메일 인증 필수. **SES 가 샌드박스면 `false`** (인증 메일이 검증된 주소로만 나가 가입이 막힌다) | 생략 시 `false` — 가입 즉시 로그인 가능 |
+| `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET` | Google Cloud 콘솔 OAuth 클라이언트(웹). 승인된 리디렉션 URI: `{FRONT_ORIGIN}/api/auth/oauth2/callback/google` | 생략 시 구글 로그인 꺼짐(버튼을 누르면 로그인 화면으로 돌아옴) |
+| `KAKAO_CLIENT_ID`·`KAKAO_CLIENT_SECRET` | Kakao Developers REST API 키·Client Secret(사용함). Redirect URI: `{FRONT_ORIGIN}/api/auth/oauth2/callback/kakao`. 동의항목 **카카오계정(이메일)** 필수 — 비즈 앱 전환 필요 | 생략 시 카카오 로그인 꺼짐. 이메일 동의항목이 없으면 `AUTH_OAUTH_EMAIL_REQUIRED` |
 | `PROXY_SECRET` | 32바이트 이상 랜덤, **Amplify 와 같은 값** | 기동은 된다. Amplify 경유 요청이 전부 Amplify 서버 IP 하나로 묶여 로그인·티켓 접수 요청 제한을 전체 사용자가 함께 쓴다 |
 
 **프론트(Amplify)** — 세 값 모두 **빌드 결과물에 고정**된다(rewrites 대상, `NEXT_PUBLIC_*` 인라인). Amplify 콘솔 환경변수에 넣고, **값을 바꾸면 재빌드**해야 반영된다.
