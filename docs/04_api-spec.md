@@ -33,10 +33,14 @@
 ## 2. 인증·회원 (백성준)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| POST | `/api/auth/signup` | 공개 | 고객 회원가입 |
-| POST | `/api/auth/login` | 공개 | → 본문 `{accessToken, member}` + `Set-Cookie: refreshToken`(httpOnly, Secure, SameSite=Lax, Path=/) |
+| POST | `/api/auth/signup` | 공개 | 고객 회원가입. 이메일 인증이 켜져 있으면(`EMAIL_VERIFICATION=true`) `status=PENDING` 으로 저장되고 인증 메일이 나간다 — 인증 전 같은 이메일로 다시 가입하면 덮어쓰고 재발송(`409 MEMBER_EMAIL_DUPLICATED` 는 인증을 마친 이메일만) |
+| POST | `/api/auth/email/verify` | 공개 | (신수진, back #117) `{token}` → 회원 `ACTIVE`. 없음·만료·사용됨은 모두 `400 AUTH_RESET_TOKEN_INVALID` |
+| POST | `/api/auth/email/resend` | 공개 | (신수진, back #117) `{email}` → 항상 200. 인증 전(PENDING) 회원일 때만 30분·1회용 링크 `{FRONT_ORIGIN}/verify-email?token=` 재발송 |
+| POST | `/api/auth/login` | 공개 | → 본문 `{accessToken, member}` + `Set-Cookie: refreshToken`(httpOnly, Secure, SameSite=Lax, Path=/). 이메일 인증 전이면 `403 AUTH_EMAIL_NOT_VERIFIED`(비밀번호가 맞을 때만 — 틀리면 일반 401) → 프론트는 인증 안내·재발송 화면 |
 | POST | `/api/auth/refresh` | 공개(쿠키) | 쿠키의 Refresh로 Access 재발급 + Refresh 회전(새 쿠키) → `{accessToken, member}` |
 | POST | `/api/auth/logout` | 로그인 | Refresh 폐기 + 쿠키 삭제 |
+| GET | `/api/auth/oauth2/authorize/{google\|kakao}` | 공개 | 소셜 로그인 시작 (브라우저 이동용, 항상 302). 제공자 인가 화면으로 보내고 `oauthState` 쿠키(httpOnly, 5분, `Path=/api/auth/oauth2`)를 심는다. id·secret 이 설정되지 않은 제공자는 `/login?error=AUTH_OAUTH_FAILED` |
+| GET | `/api/auth/oauth2/callback/{google\|kakao}` | 공개 | 제공자가 `?code&state` 로 돌려보내는 주소 (항상 302). `state` 가 쿠키와 같을 때만 코드 → 토큰 → 사용자 정보. 성공: `Set-Cookie: refreshToken`(로그인과 동일) + `{FRONT_ORIGIN}/` — Access 는 프론트가 `/api/auth/refresh` 로 받는다. 실패: `{FRONT_ORIGIN}/login?error=` + `AUTH_OAUTH_FAILED`(취소·state 불일치·제공자 오류) / `AUTH_OAUTH_EMAIL_REQUIRED`(이메일 미동의·미확인) / `AUTH_OAUTH_STAFF_NOT_ALLOWED`(직원 계정 이메일) / `AUTH_INACTIVE_MEMBER` |
 | POST | `/api/auth/guest` | 공개 | `{ticketNo, email, password}` → `{guestToken, ticketId, expiresIn}`(초, 30분). 쿠키 없음 — 프론트 메모리에 두고 `Authorization: Bearer`. 토큰: `sub=guest:{ticketId}`, `role=GUEST`, `ticketId` 클레임. 티켓 없음·이메일 불일치·회원 티켓·비밀번호 오류는 모두 같은 `401 AUTH_GUEST_INVALID`(열거 방지, 실패 경로도 BCrypt 1회). 이메일 대소문자 무시. Guest 토큰으로 회원 API 호출 시 403 |
 | POST | `/api/auth/password/reset-request` | 공개 | `{email}` → 항상 200 (계정 존재 여부 비노출). 활성 회원일 때만 30분·1회용 링크 `{FRONT_ORIGIN}/reset-password?token=` 메일 — 커밋 후 비동기 발송이라 응답 시간에 메일 전송이 섞이지 않음 |
 | POST | `/api/auth/password/reset` | 공개 | `{token, newPassword(8~64)}` → 비밀번호 교체 + Refresh 전부 폐기, 같은 회원의 다른 링크도 사용 처리. 없음·만료·사용됨은 모두 `400 AUTH_RESET_TOKEN_INVALID` |
@@ -45,6 +49,7 @@
 | GET | `/api/members/me` | 로그인 | 내 정보 |
 | PATCH | `/api/members/me` | 로그인 | `{name, phone}` 내 정보 수정 → 내 정보. `phone` 을 비우면 삭제, 검증은 회원가입과 동일 |
 | PATCH | `/api/members/me/password` | 로그인 | `{currentPassword, newPassword(8~64)}` → Refresh 토큰 전체 폐기(프론트는 로그아웃 처리). 현재 비밀번호 불일치 `400 AUTH_PASSWORD_MISMATCH` |
+| DELETE | `/api/members/me` | CUSTOMER | 회원 탈퇴. 계정 `INACTIVE` + Refresh 토큰 전체 폐기(프론트는 로그아웃 처리). 이후 로그인·재발급·소셜 로그인은 `AUTH_INACTIVE_MEMBER`. 개인정보·이메일은 남는다(재가입 불가, 복구는 ADMIN 계정 관리). 직원은 403 |
 | PATCH | `/api/members/me/availability` | AGENT | `{available: true}` → 내 정보. 역할이 AGENT 가 아니면(LEAD·ADMIN 포함) `403 MEMBER_NOT_AGENT` |
 | GET | `/api/console/agents` | AGENT+ | 배정 드롭다운용 활성 상담원(상담 불가 포함) 이름순 → `[{memberId, name, available, activeCount}]`. `activeCount` 는 ASSIGNED·IN_PROGRESS 티켓 수(자동 배정과 같은 기준). 이메일·연락처는 주지 않는다 (CR #44) |
 | GET | `/api/admin/members` | ADMIN | 목록 `?role=&status=&page=&size=` (기본 가입일 최신순 20개) → 페이지 `{memberId, email, name, phone, role, status, available, createdAt}` |
@@ -111,7 +116,7 @@
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
 | POST | `/api/tickets` | 공개(비회원 포함) | 문의 접수 |
-| GET | `/api/tickets/my` | CUSTOMER | 내 문의 목록 `?page=&size=` (기본 접수일 최신순 20개) → 페이지 `{ticketId, ticketNo, title, customerId, customerName, category, priority, sentiment, status, agentId, agentName, firstResponseDueAt, firstRespondedAt, slaWarned, slaBreached, createdAt}`. Guest 토큰은 403 (토큰이 티켓 1건에만 유효해 목록이 성립하지 않음) |
+| GET | `/api/tickets/my` | CUSTOMER | 내 문의 목록 `?status=&page=&size=` (기본 접수일 최신순 20개, `status` 생략 시 전체) → 페이지 `{ticketId, ticketNo, title, customerId, customerName, category, priority, sentiment, status, agentId, agentName, firstResponseDueAt, firstRespondedAt, slaWarned, slaBreached, createdAt}`. Guest 토큰은 403 (토큰이 티켓 1건에만 유효해 목록이 성립하지 않음) |
 | GET | `/api/tickets/{id}` | 고객 본인 / Guest 토큰(발급 대상 1건) | 상세 — 답변 목록에서 **내부 메모를 조회 쿼리 단계에서 제외**한다. 남의 티켓·없는 티켓·Guest 토큰의 ticketId 불일치는 **모두 404** `TICKET_NOT_FOUND` (403 을 주면 티켓 존재 여부가 드러난다). AGENT+ 는 이 경로가 아니라 `GET /api/console/tickets/{id}` 를 쓴다 — 상담원은 내부 메모와 이력이 함께 필요하다 |
 | POST | `/api/tickets/{id}/replies` | 고객 본인 / Guest 토큰 | `{content, attachmentIds?}` → 201 + ReplyResponse. RESOLVED 면 재문의로 IN_PROGRESS 전이 + STATUS_CHANGE 이력(메모 `고객 재문의`). CLOSED 면 409 `TICKET_ALREADY_CLOSED` (종료 티켓은 담당자가 손을 뗀 상태라 답글만 쌓인다 → 새 문의로 받는다). `isInternal` 을 받지 않는다 — 고객은 내부 메모를 만들 수 없다 |
 | GET | `/api/console/tickets` | AGENT(본인), LEAD+ | `?status=&priority=&category=&agentId=&unassigned=true&sla=WARNING\|BREACHED&keyword=&page=&size=&sort=` → 페이지(목록 행 필드는 §7 고객 목록과 동일). 기본 정렬 **SLA 임박순**(`firstResponseDueAt` ASC). `unassigned=true` 는 미배정(`agent_id IS NULL`)만이며 `agentId` 와 상호 배타(이쪽이 우선). **AGENT 가 `agentId` 로 남의 티켓을 조회하면 본인 조건으로 덮어쓴다**(거부가 아니라 치환 — 거부는 상담원 존재를 노출한다). `unassigned=true` 는 AGENT 도 쓸 수 있다(CS-01 미배정 탭). `keyword` 는 티켓번호·제목·본문 부분 일치 |
@@ -130,6 +135,8 @@
 > | `POST /api/tickets`, `POST /api/attachments` | **비회원만**(Authorization 헤더 없음) 10분 5건 |
 > | `POST /api/auth/login`, `POST /api/auth/guest`(조회 비밀번호 대입 방지) | 10분 10건 |
 > | `POST /api/auth/password/reset-request`, `/api/auth/guest/reset-request` | 10분 5건 |
+> | `POST /api/auth/signup`, `/api/auth/email/resend` (메일 발송 경로) | 10분 5건 |
+> | `POST /api/auth/email/verify` | 10분 10건 |
 >
 > 본문 값 기준 제한(비회원 **동일 이메일 1시간 5건**)은 서비스에서 `RateLimiter.tryAcquire("ticket-email:" + email, 5, Duration.ofHours(1))` 호출(박민재 `TicketService`). 테스트에서는 `app.rate-limit.enabled=false`(back `src/test/resources/config/application.yml`).
 > 본문(`content`)은 일반 텍스트, 최대 5,000자. 서버는 원문 저장, 프론트는 이스케이프 출력.

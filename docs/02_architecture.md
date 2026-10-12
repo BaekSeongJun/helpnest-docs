@@ -83,7 +83,7 @@ flowchart LR
 | 로컬 개발 | `localhost:3000/api/*` → rewrites → `localhost:8080` | 동일 | 배포와 같은 구조로 개발 |
 
 - 요청 제한(RateLimitFilter)은 **실제 클라이언트 IP** 기준으로 센다. CloudFront 는 받은 `X-Forwarded-For` 뒤에 덧붙이므로 왼쪽 값은 위조할 수 있다 → `server.forward-headers-strategy: none` 으로 원문을 받아 **오른쪽에서** 고른다(back #105 실측). CloudFront 직접 호출은 오른쪽 1번째, Amplify 경유(`proxy.ts` 가 붙인 `X-Helpnest-Proxy` 비밀 헤더가 `PROXY_SECRET` 과 같을 때만)는 오른쪽 3번째(`클라이언트, Amplify CloudFront, Amplify 컴퓨트`).
-- CSV 다운로드는 수 MB 미만이라 프록시 경유로 충분 (5.72MB를 넘을 정도로 커지면 직접 호출로 변경).
+- CSV 다운로드는 프록시 경유 (5.72MB를 넘을 정도로 커지면 직접 호출로 변경). 단 `text/*` 응답은 Amplify 가 본문을 다시 써 BOM 이 사라지고 Content-Length 는 그대로라 다운로드가 멈춘다 → `application/octet-stream` 으로 보낸다(back #104).
 
 ---
 
@@ -195,6 +195,7 @@ com.helpnest
 | `TicketStatusChangedEvent(ticketId, from, to, actorId)` | 박민재 | 백성준 `SurveyListener`, 박민재 알림 | to=RESOLVED → 설문 생성(재해결이면 재발급) → 메일 발송 / RESOLVED→IN_PROGRESS(재문의) → 미제출 설문 만료 |
 | `ReplyCreatedEvent(ticketId, replyId, writerType, isInternal)` | 박민재 | 박민재 알림 | 고객 답글 → 상담원 알림 / 상담원 공개 답변 → 고객 웹 알림(회원) + `MailSender.sendAgentReplyMail`(신수진) |
 | `SurveySubmittedEvent(ticketId, rating)` | 백성준 | 박민재 `TicketCloseListener` | 티켓 CLOSED |
+| `MemberSignedUpEvent(memberId, email, name)` | 백성준 | 신수진 이메일 인증(`domain/auth/verify`) | 인증이 필요한 가입(PENDING)·인증 전 재가입 때 발행 → `AFTER_COMMIT` + `@Async` 로 `EMAIL_VERIFY` 토큰 발급(`PasswordResetService.issue`) + 인증 메일. 인증을 끈 환경에서는 발행하지 않음 |
 
 ### 5.2 포트 (인터페이스 소유 = 구현자)
 | 포트 | 소유/구현 | 호출자 | 시그니처 |
@@ -298,6 +299,9 @@ volumes:
 | `DB_URL`·`DB_USERNAME`·`DB_PASSWORD` | RDS 엔드포인트·계정 | 기동 실패 |
 | `FRONT_ORIGIN` | Amplify 도메인 `https://main.xxxx.amplifyapp.com` (끝 `/` 없이) | 기동 실패. 값이 틀리면 첨부 업로드·WebSocket 이 CORS 로 막히고 메일 링크가 엉뚱한 곳을 가리킨다 |
 | `REFRESH_COOKIE_SECURE` | `true` (생략 시 기본 `true`) | — |
+| `EMAIL_VERIFICATION` | `true` = 가입 시 이메일 인증 필수. **SES 가 샌드박스면 `false`** (인증 메일이 검증된 주소로만 나가 가입이 막힌다) | 생략 시 `false` — 가입 즉시 로그인 가능 |
+| `GOOGLE_CLIENT_ID`·`GOOGLE_CLIENT_SECRET` | Google Cloud 콘솔 OAuth 클라이언트(웹). 승인된 리디렉션 URI: `{FRONT_ORIGIN}/api/auth/oauth2/callback/google` | 생략 시 구글 로그인 꺼짐(버튼을 누르면 로그인 화면으로 돌아옴) |
+| `KAKAO_CLIENT_ID`·`KAKAO_CLIENT_SECRET` | Kakao Developers REST API 키·Client Secret(사용함). Redirect URI: `{FRONT_ORIGIN}/api/auth/oauth2/callback/kakao`. 동의항목 **카카오계정(이메일)** 필수 — 비즈 앱 전환 필요 | 생략 시 카카오 로그인 꺼짐. 이메일 동의항목이 없으면 `AUTH_OAUTH_EMAIL_REQUIRED` |
 | `PROXY_SECRET` | 32바이트 이상 랜덤, **Amplify 와 같은 값** | 기동은 된다. Amplify 경유 요청이 전부 Amplify 서버 IP 하나로 묶여 로그인·티켓 접수 요청 제한을 전체 사용자가 함께 쓴다 |
 
 **프론트(Amplify)** — 세 값 모두 **빌드 결과물에 고정**된다(rewrites 대상, `NEXT_PUBLIC_*` 인라인). Amplify 콘솔 환경변수에 넣고, **값을 바꾸면 재빌드**해야 반영된다.
@@ -339,6 +343,7 @@ public repo 라서 EC2 IP·인스턴스 ID, RDS 엔드포인트, 보안그룹 ID
 | 롤백 | `sudo cp -p /opt/helpnest/helpnest-back.jar.bak /opt/helpnest/helpnest-back.jar && sudo systemctl restart helpnest-back`. 배포 후 `sha256sum /opt/helpnest/*.jar*` 로 `.bak` 이 **직전 운영 버전**(현재와 다른 해시)인지 확인. Flyway 는 되돌리지 않는다 — 스키마 롤백은 새 마이그레이션으로 |
 | 로그 | `sudo journalctl -u helpnest-back -f` / `-n 200` |
 | 환경변수만 변경 | 백엔드: env 파일 수정(백업 `.bak-<시각>`) → `sudo systemctl restart helpnest-back`. 프론트: Amplify 환경변수 수정 → **재빌드해야 반영**(빌드 결과물에 고정) |
+| 기능 플래그 켜기·끄기 | `EMAIL_VERIFICATION`, `GOOGLE_*`·`KAKAO_*`(§7.1)는 jar 변경 없이 env 수정 + 재시작으로 켜고 끈다. **화면이 먼저**: 메일·리다이렉트가 가리키는 프론트 페이지가 main 에 배포된 것을 확인한 뒤 켠다. 끄기 = `false` 또는 키 비우기 → 재시작 (§8.3) |
 | 코드 + 환경변수가 함께 바뀌는 릴리스 | **환경변수를 먼저** 두 곳에 넣고 → 머지·배포. 새 값을 읽지 않는 이전 버전에는 넣어 둬도 영향 없음 (예: back #107·front #59 의 `PROXY_SECRET`) |
 | Amplify 환경변수를 CLI 로 변경 | `aws amplify update-app --environment-variables` 는 **전체를 덮어쓴다** — 기존 키(`_LIVE_UPDATES` 포함)를 모두 함께 넣는다. 값에 쉼표·따옴표가 있으면 `--cli-input-json file://…` |
 | `FRONT_ORIGIN`(프론트 도메인) 변경 | S3 버킷 CORS 에 새 origin 을 **먼저 추가** → EC2 env `FRONT_ORIGIN` 수정·재시작(`/ws`·CORS·메일 링크) → 이전 주소는 Amplify 리다이렉트로 새 주소에 모은다. 쿠키 도메인이 바뀌므로 사용자는 한 번 다시 로그인 (10/8 `helpnest.kro.kr` 전환) |
@@ -355,3 +360,15 @@ public repo 라서 EC2 IP·인스턴스 ID, RDS 엔드포인트, 보안그룹 ID
 | 오래 열어 둔 탭이 재연결 시 `STOMP 인증 실패` 무한 반복 | 재연결 때 만료된 메모리 토큰 사용 | 재연결 전 토큰 재발급(front #58) |
 
 - QA·스모크 데이터 정리: SQL 초안(박민재) + 안전 검사 보완(신수진)으로 운영 DB 예행 실행(끝에 ROLLBACK) 통과 → **Final 직전** 실행 후 S3 객체 삭제
+
+### 8.3 운영 반영 기록 (10/12 이메일 인증·소셜 로그인)
+- 릴리스 back #130·front #73(dev → main, 3인 확인) → Amplify main 빌드 성공·`/verify-email` 200 확인 → EC2 env 에 `EMAIL_VERIFICATION=true` → `deploy.sh` 1회(`.bak` = 직전 운영 jar 해시, Flyway 3건 적용) → 소셜 키 4개 등록 후 재시작. env 는 바꿀 때마다 `.bak-<날짜>` 로 백업
+- 비밀값은 담당자 로컬 secret 파일에서 ssh 표준입력으로만 옮겼다(화면·로그·Issue 에 남기지 않음). 넣기 전 문자 형식·개수만 검사
+
+| 확인 | 결과 |
+|---|---|
+| 이메일 인증 (back #117) | 가입 201·PENDING → 인증 전 로그인 403 `AUTH_EMAIL_NOT_VERIFIED` → SES `EMAIL_VERIFY SENT`·Gmail 수신 → 링크 클릭 ACTIVE → 로그인 200 |
+| 소셜 로그인 (back #124) | `/api/auth/oauth2/authorize/{google,kakao}` 302 · `redirect_uri={FRONT_ORIGIN}/api/auth/oauth2/callback/…` → 브라우저에서 두 제공자 모두 로그인 성공, `member_social` 기록 |
+
+- 확인용 가입 계정·토큰·메일 기록은 확인 직후 삭제(이메일·id 일치 검사 후 트랜잭션)
+- 끄는 법: `EMAIL_VERIFICATION=false` 또는 해당 제공자 키를 비우고 `sudo systemctl restart helpnest-back`. 이미 PENDING 인 회원은 플래그를 꺼도 PENDING 으로 남아 로그인이 막힌다 — 인증 메일 재발송(`/verify-email` 실패 화면·로그인 안내)으로 인증하면 된다

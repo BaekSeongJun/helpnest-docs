@@ -30,6 +30,7 @@ erDiagram
 | 테이블 | 소유 | 구분 | 설명 |
 |---|:-:|---|---|
 | MEMBER | 백성준 | 핵심 | 회원/상담원/팀장/관리자 |
+| MEMBER_SOCIAL | 백성준 | 보조 | 회원 ↔ 소셜 계정(구글·카카오) 연결 |
 | REFRESH_TOKEN | 백성준 | 보조 | JWT Refresh 저장·폐기 |
 | PASSWORD_RESET_TOKEN | 백성준 | 보조 | 회원 비밀번호·비회원 조회 비밀번호 재설정 링크 토큰 |
 | ATTACHMENT | 백성준 | 핵심 | 첨부 메타데이터 (파일 본체는 S3/로컬) |
@@ -60,7 +61,7 @@ erDiagram
 | notification.type | `ASSIGNED`, `SLA_WARNING`, `SLA_BREACHED`, `CUSTOMER_REPLY`, `AGENT_REPLY`(고객 수신), `STATUS_CHANGED`, `UNASSIGNED`, `CHAT_REQUEST` |
 | chat_room.status | `WAITING`, `OPEN`, `CLOSED`, `CONVERTED`(티켓 전환), `CANCELED`(대기 중 이탈) |
 | mail_log.mail_type | `RESOLVED_SURVEY`, `AGENT_REPLY`, `PASSWORD_RESET`, `GUEST_PASSWORD_RESET` |
-| reset.target_type | `MEMBER`, `GUEST_TICKET` |
+| reset.target_type | `MEMBER`, `GUEST_TICKET`, `EMAIL_VERIFY`(가입 인증 링크, target_id = member_id) |
 
 ## 3. DDL
 
@@ -72,13 +73,14 @@ erDiagram
 CREATE TABLE member (
   member_id      BIGSERIAL PRIMARY KEY,
   email          VARCHAR(100) NOT NULL UNIQUE,
-  password       VARCHAR(100) NOT NULL,              -- BCrypt
+  password       VARCHAR(100),                       -- BCrypt. 소셜로만 가입한 회원은 NULL
   name           VARCHAR(50)  NOT NULL,
   phone          VARCHAR(20),
   role           VARCHAR(20)  NOT NULL CHECK (role IN ('CUSTOMER','AGENT','LEAD','ADMIN')),
-  status         VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE')),
+  status         VARCHAR(20)  NOT NULL DEFAULT 'ACTIVE' CHECK (status IN ('ACTIVE','INACTIVE','PENDING')),  -- PENDING = 이메일 인증 전, 로그인 불가
   available      BOOLEAN      NOT NULL DEFAULT FALSE, -- 상담원 자동배정 대상 여부
   last_assigned_at TIMESTAMPTZ,                       -- 최소부하 동률 처리 (배정 시 박민재 코드가 MemberQueryPort로 갱신)
+  email_verified_at TIMESTAMPTZ,                      -- 인증 링크 확인 시각. 인증 도입 전 가입자·직원 계정은 NULL
   created_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   updated_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
@@ -93,9 +95,19 @@ CREATE TABLE refresh_token (
   created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- 소셜 로그인 연결 (FR-AUTH-11). 한 회원이 구글·카카오를 모두 연결할 수 있다
+CREATE TABLE member_social (
+  social_id         BIGSERIAL PRIMARY KEY,
+  member_id         BIGINT      NOT NULL REFERENCES member(member_id),
+  provider          VARCHAR(20) NOT NULL CHECK (provider IN ('GOOGLE','KAKAO')),
+  provider_user_id  VARCHAR(100) NOT NULL,     -- 제공자 쪽 사용자 id = 로그인 키 (이메일은 바뀔 수 있다)
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE (provider, provider_user_id)
+);
+
 CREATE TABLE password_reset_token (
   reset_id     BIGSERIAL PRIMARY KEY,
-  target_type  VARCHAR(20) NOT NULL CHECK (target_type IN ('MEMBER','GUEST_TICKET')),
+  target_type  VARCHAR(20) NOT NULL CHECK (target_type IN ('MEMBER','GUEST_TICKET','EMAIL_VERIFY')),
   target_id    BIGINT NOT NULL,                  -- member_id 또는 ticket_id (FK 없이 참조)
   token_hash   VARCHAR(200) NOT NULL UNIQUE,     -- 원문 토큰은 메일 링크에만, DB엔 SHA-256 해시
   expires_at   TIMESTAMPTZ NOT NULL,             -- 발급 + 30분
