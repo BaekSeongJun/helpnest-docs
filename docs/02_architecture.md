@@ -139,7 +139,7 @@ src/
 ### 3.1 공용 레이아웃 규칙
 - **Header**(백성준): 로고, 사용자 메뉴, 알림 벨 **슬롯**. 알림 벨 컴포넌트 자체는 박민재가 `components/notification/NotificationBell.tsx`로 만들고, 백성준이 Header에 1회 배치한다.
 - **Sidebar**(백성준): `config/menu.ts`의 역할별 메뉴를 렌더링. 메뉴 추가는 백성준에게 CR.
-- **Footer**(백성준): 고객 화면 하단 정보.
+- 고객·비로그인 화면도 콘솔과 같은 셸(헤더 + 사이드바)을 쓴다 — 푸터는 없앴다(front #74).
 - 각 담당자는 `(main)/` 아래 **자기 페이지 폴더만** 만든다 → 레이아웃은 자동 적용.
 - 다른 담당자 페이지에 들어가는 컴포넌트는 "컴포넌트 제공자가 만들고, 페이지 소유자가 import" 방식.
   - 티켓 상세(박민재) ← `AiAnalysisPanel`, `AiDraftButton`(신수진), `TemplatePicker`, `CustomerHistoryPanel`(백성준)
@@ -203,7 +203,7 @@ com.helpnest
 | `TicketClassificationPort` | 박민재 | 신수진 | `applyClassification(ticketId, category, priority, sentiment)` / `applyClassificationFailed(ticketId)` → 우선순위·SLA 재계산 후 자동 배정 |
 | `TicketQueryPort` | 박민재 | 백성준, 신수진 | `getTicketSummary(ticketId)`, `findResolvedReplies(category, limit)` (AI 초안 컨텍스트) |
 | `AttachmentPort` | 백성준 | 박민재 | `linkToTicket(List<attachmentId>, ticketId, replyId)` |
-| `FaqQueryPort` | 백성준 | 신수진 | `findPublishedByCategory(category, keyword, limit)` |
+| `FaqQueryPort` | 백성준 | 신수진 | `findPublishedByCategory(category, keyword, limit)`, `findPublishedByQuestion(question, limit)`(AI 상담 근거 — 문장과 단어가 겹치는 순) |
 | `MailSender` | 신수진 | 백성준, 박민재 | `sendResolvedMail(ResolvedMailCommand)` (고객명, 이메일, 티켓번호, 답변 요약, 설문 링크) / `sendAgentReplyMail(AgentReplyMailCommand)`(박민재) / `sendPasswordResetMail(PasswordResetMailCommand)`(백성준, 회원·비회원 공용) |
 | `FileStorage` | 신수진 | 백성준 | `upload(MultipartFile, keyPrefix)` → key(`keyPrefix/UUID.ext`), `getDownloadUrl(key)`(prod presigned GET 10분 / local `null`), `load(key)`(local 스트림 전용), `delete(key)` |
 | `AiResultPort` | 신수진 | 박민재 | `markOverridden(ticketId, memberId, category, priority)` (상담원 수동 분류 수정 기록) |

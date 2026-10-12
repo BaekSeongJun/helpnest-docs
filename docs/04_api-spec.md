@@ -76,7 +76,7 @@
 |---|---|---|---|
 | GET | `/api/faqs` | 공개 | `?category=&keyword=&page=&size=` → 페이지 `{faqId, category, question, answer, published, viewCount, createdAt, updatedAt}`. **공개 글만**, 기본 조회수 높은 순 20개. keyword 는 질문·답변 부분 일치(대소문자 무시) |
 | GET | `/api/faqs/{id}` | 공개 | 조회수 +1 후 반환 (아코디언을 열 때 호출). 비공개·없는 글은 `404` |
-| GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천 → `[FaqResponse]`(목록과 같은 필드) 공개 글 중 질문·답변 부분 일치, 조회수 높은 순 최대 3건. `q` 가 공백 제외 2자 미만이면 빈 배열 |
+| GET | `/api/faqs/suggest` | 공개 | `?q=` 접수 폼 추천 → `[FaqResponse]`(목록과 같은 필드) 공개 글 최대 3건. `q` 를 단어로 나눠 채점한다: 물음말·서술어("언제", "되나요")는 빼고, 끝의 어미·조사를 뗀 형태로도 찾으며("환불은"·"환불되나요" → "환불"), 질문(제목)에 있으면 2점·답변에만 있으면 1점, 점수가 같으면 조회수 순. 채점할 단어가 없으면 빈 배열. AI 상담 근거(`FaqQueryPort.findPublishedByQuestion`)도 같은 채점 |
 | GET | `/api/admin/faqs` | LEAD, ADMIN | 관리 표용 목록 — 비공개 포함, 기본 최신순. 쿼리는 `/api/faqs` 와 같음 |
 | POST/PUT/DELETE | `/api/admin/faqs[/{id}]` | LEAD, ADMIN | `{category, question(≤300), answer(≤5,000), published?}` (published 생략 시 공개). POST `201`, DELETE 는 실제 삭제 |
 | GET | `/api/templates` | AGENT+ | `?category=&keyword=&page=&size=` → 페이지 `{templateId, category, title, content, active, createdAt, updatedAt}`. **사용 중(active)만**, 기본 제목순 50개. keyword 는 제목·본문 부분 일치(대소문자 무시). `TemplatePicker` 용 |
@@ -170,7 +170,7 @@
 ## 10. 채팅 (박민재)
 | Method | URL | 권한 | 설명 |
 |---|---|---|---|
-| POST | `/api/chat/rooms` | CUSTOMER | 채팅 요청 → `{roomId, status: WAITING\|OPEN, position}` (상담원 배정 시 OPEN + CHAT 티켓 생성) |
+| POST | `/api/chat/rooms` | CUSTOMER | 채팅 요청 → `{roomId, status: WAITING\|OPEN, position}` (상담원 배정 시 OPEN + CHAT 티켓 생성). 본문은 선택: `{aiTranscript?}`(2,000자 이하, AI 상담 내용 — FR-CHT-07). **방을 새로 만들 때만** 고객의 첫 메시지로 저장하고(앞에 `[AI 상담 내용]` 표시), 이미 진행 중인 방이 있으면 무시한다. 본문이 없으면 지금과 같다 |
 | (STOMP) | `/app/chat/{roomId}/send` | CUSTOMER | WAITING 상태에서도 전송 가능 — 대기 중 메시지는 저장되어 상담원 연결 시 표시, 전환 시 티켓 본문이 됨 |
 | POST | `/api/chat/rooms/{roomId}/convert` | CUSTOMER | 대기 5분 초과 후 "문의로 남기기" → 대기 메시지로 티켓 생성, 방 CONVERTED → `{ticketNo}` |
 | DELETE | `/api/chat/rooms/{roomId}` | CUSTOMER | 대기 중 나가기 → CANCELED |
@@ -196,6 +196,7 @@
 | POST | `/api/console/tickets/{id}/ai/classify` | AGENT+ | 재분류 (동기, 타임아웃 10초) |
 | POST | `/api/console/tickets/{id}/ai/drafts` | 담당 AGENT, LEAD+ | 초안 생성(동기) → `{draftId, content, references[{type: FAQ\|REPLY, id, label}], model, createdAt}`. 담당 아님 403 `AI_NOT_ASSIGNEE`, LLM 실패 503 `AI_PROVIDER_UNAVAILABLE` (docs/05 §4.4) |
 | GET | `/api/console/tickets/{id}/ai/drafts` | AGENT+ | 초안 목록(최신순), 항목 형식은 POST 응답과 같음 |
+| POST | `/api/ai/chat` | CUSTOMER | AI 상담(FR-AI-07, 동기). 요청 `{question(1~500자), history?: [{role: USER\|AI, content}]}`(history 는 최근 6개까지만 사용 — 서버에 저장하지 않으므로 화면이 매번 보낸다) → `{answer, references: [{faqId, question}], handoff}`. 근거는 `FaqQueryPort.findPublishedByQuestion(question, 3)`. **근거 FAQ 가 없거나 LLM 이 실패하면 오류가 아니라 200 + `handoff: true`**(answer 는 상담원 연결 안내 고정 문구, references 빈 배열) — 화면은 한 경로만 처리한다. 요청 제한: **회원 기준** 10분 30회 — 서비스에서 기존 `RateLimiter.tryAcquire("ai-chat:" + memberId, 30, Duration.ofMinutes(10))` 를 재사용한다(새 의존성 없음, IP 기준이면 같은 공유기를 쓰는 고객끼리 한도를 나눠 쓴다) → 초과 시 429 `COMMON_TOO_MANY_REQUESTS` |
 
 ## 13. 대시보드 · 리포트 (신수진)
 | Method | URL | 권한 | 설명 |

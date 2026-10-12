@@ -49,7 +49,7 @@ flowchart TB
 ### 2.2 고객
 | ID | 화면 | 경로 | 권한 | 담당 | 주요 구성 | 사용 API |
 |---|---|---|---|---|---|---|
-| CU-01 | 홈 | `/` | 공개 | 백성준 | 검색창(FAQ), 자주 묻는 질문 5개, [문의하기] [채팅 상담 (회원만)] [문의 조회] 카드 | `GET /faqs` |
+| CU-01 | 홈 | `/` | 공개 | 백성준 | 콘솔형 구조(제목 → 요약 → 목록, front #74). 공통: 제목 "고객센터" + [문의하기], FAQ 검색창(→ `/faq?keyword=`). **로그인 고객**: 내 문의 건수 카드 3개(접수 = RECEIVED+ASSIGNED / 처리 중 / 해결), 최근 문의 표 5건(→ 상세), 바로가기(채팅 상담·FAQ). **비로그인**: 바로가기 3개(문의하기·비회원 문의 조회·로그인하고 채팅 상담), 자주 묻는 질문 5개 | `GET /faqs`, `GET /tickets/my`(`status`·`size=1` 의 `totalElements` 로 건수) |
 | CU-02 | FAQ | `/faq` | 공개 | 백성준 | 유형 탭, 키워드 검색, 아코디언, 하단 "해결되지 않았나요? 문의하기" | `GET /faqs` |
 | CU-03 | 문의하기 | `/inquiry/new` | 공개 | 백성준 | 유형 선택, 제목(입력 시 FAQ 추천), 본문(5,000자 카운터), 첨부(≤5개·10MB), 비회원 정보(이름·이메일·조회 비밀번호) | `GET /faqs/suggest`, `POST /attachments`, `POST /tickets` |
 | CU-04 | 접수 완료 | `/inquiry/complete` | 공개 | 백성준 | 티켓번호, 예상 응답 안내, 비회원은 "티켓번호를 저장해 주세요" | - |
@@ -57,7 +57,7 @@ flowchart TB
 | CU-06 | 조회 비밀번호 재설정 | `/inquiry/lookup/reset` | 공개 | 백성준 | ①티켓번호·이메일 → 메일 발송 ②`?token=` 새 비밀번호 | `POST /auth/guest/reset-request`, `/reset` |
 | CU-07 | 문의 상세 | `/my/inquiries/[id]` | 본인/Guest (비회원은 CU-05 조회 성공 후 이 화면으로 이동 — `AuthGuard`가 Guest 토큰 허용) | 백성준 (타임라인 `TicketTimeline`은 박민재) | 상태 배지, 본문·첨부, 답변 타임라인, 추가 답글 입력, 해결 상태면 "재문의" 안내 | `GET /tickets/{id}`, `POST /tickets/{id}/replies` |
 | CU-08 | 내 문의 목록 | `/my/inquiries` | CUSTOMER | 백성준 | 상태 필터, 목록(티켓번호, 제목, 상태, 최근 답변일) | `GET /tickets/my` |
-| CU-09 | 1:1 채팅 | `/chat` | CUSTOMER | 박민재 | 대기 화면(순번·경과시간) → 5분 초과 시 [문의로 남기기][계속 기다리기][나가기] → 상담 화면(메시지, 상담원 이름) → 종료 | `POST/DELETE /chat/rooms`, `/convert`, STOMP |
+| CU-09 | 1:1 채팅 | `/chat` | CUSTOMER | 박민재 | **AI 상담 먼저**(FR-CHT-07): 질문 입력 → AI 답변 + 참고 FAQ 링크, [상담원 연결] 버튼은 항상 보이고 `handoff` 면 강조. [상담원 연결] 을 누르면 나눈 대화를 `aiTranscript` 로 넘기며 채팅 요청. 진행 중인 방이 있으면 AI 단계를 건너뛴다 → 대기 화면(순번·경과시간) → 5분 초과 시 [문의로 남기기][계속 기다리기][나가기] → 상담 화면(메시지, 상담원 이름) → 종료 | `POST /ai/chat`, `POST/DELETE /chat/rooms`, `/convert`, STOMP |
 | CU-10 | 내 정보 | `/my/profile` | 로그인 | 백성준 | 이름·연락처 수정, 비밀번호 변경(현재/새/확인), 회원 탈퇴(고객만, 확인 대화상자 → 로그아웃 → 홈) | `PATCH /members/me`, `/password` |
 | CU-11 | 만족도 설문 | `/survey/[token]` | 토큰 | 백성준 | 티켓 제목, 별점 5개, 의견, 제출 후 감사 화면, 만료·제출 완료 안내 | `GET/POST /surveys/{token}` |
 
@@ -93,7 +93,7 @@ flowchart TB
 `CS-08 알림(신규 배정)` → `CS-02 상세` → AI 분석 확인 → [AI 초안] → 편집 → 공개 답변(IN_PROGRESS, 첫 응답 기록) → [해결] 확인 다이얼로그 → RESOLVED
 
 ### 3.3 채팅
-`CU-09` 요청 → 대기(순번 표시) → 상담원 연결 → 대화 → 종료(RESOLVED) / 5분 초과 → [문의로 남기기] → 티켓번호 안내
+`CU-09` AI 상담(질문·답변) → [상담원 연결] → 대기(순번 표시) → 상담원 연결 → 대화 → 종료(RESOLVED) / 5분 초과 → [문의로 남기기] → 티켓번호 안내
 
 ## 4. 공용 컴포넌트 주입 위치 (다른 담당자 컴포넌트를 쓰는 화면)
 | 화면(소유) | 들어가는 컴포넌트(소유) |

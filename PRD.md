@@ -200,6 +200,7 @@ CS는 고객과 기업 사이의 가장 작은 단위(마이크로)의 소통이
 | FR-AI-04 | 답변 초안 생성: 동일 유형 FAQ + 과거 해결 답변 Top-N을 컨텍스트로 LLM 호출 → 상담원이 편집 후 발송 | P0 |
 | FR-AI-05 | LLM 실패/타임아웃(10초) 시 기본값(유형 `ETC`, 우선순위 `NORMAL`)으로 fallback, 수동 분류 유도 | P0 |
 | FR-AI-06 | LLM 제공자는 설정으로 교체 가능하도록 추상화 (Spring AI) | P0 |
+| FR-AI-07 | **AI 상담**(회원 전용): 고객 질문과 단어가 겹치는 공개 FAQ 를 근거로 LLM 이 답하고, 참고한 FAQ 를 함께 보여 준다. 근거 FAQ 가 없거나 LLM 이 실패하면 답을 지어내지 않고 상담원 연결을 안내한다 | P1 |
 
 ### 4.9 대시보드·리포트 (신수진)
 | ID | 요구사항 | 우선 |
@@ -219,6 +220,7 @@ CS는 고객과 기업 사이의 가장 작은 단위(마이크로)의 소통이
 | FR-CHT-04 | **대기열**: 상담원이 없으면 대기 순번을 실시간 표시(`/user/queue/chat-status`). 상담원이 가능해지면 대기 순서(FIFO)대로 자동 연결 | P1 |
 | FR-CHT-05 | **시간 초과 전환**: 대기 5분 경과 시 "문의로 남기기 / 계속 기다리기 / 나가기" 안내. 문의로 남기기 → 대기 중 입력한 메시지를 본문으로 일반 티켓 생성(RECEIVED, `channel=CHAT`) → 방 `CONVERTED`. 나가기 → `CANCELED`(티켓 미생성) | P1 |
 | FR-CHT-06 | CHAT 티켓은 **상담원의 첫 채팅 메시지** 시 `first_responded_at` 기록 + `ASSIGNED → IN_PROGRESS` 전환(그래야 채팅 종료 시 RESOLVED 전이가 가능하고 SLA 오탐도 없음). CHAT 티켓도 AI 분류는 수행하되 **이미 배정된 티켓은 재배정하지 않음** | P1 |
+| FR-CHT-07 | **AI 상담 먼저**: [상담 시작] 전에 AI 상담(FR-AI-07)을 거친다. 고객은 언제든 [상담원 연결]을 누를 수 있고, 이때에만 채팅방이 생긴다(대기열·배정은 그대로). AI 와 나눈 대화는 방의 첫 메시지로 넘겨 상담원이 맥락을 본다. AI 대화 자체는 저장하지 않는다 | P1 |
 | FR-HIS-01 | 동일 고객(회원 ID, 비회원은 이메일 기준)의 과거 문의를 티켓 상세 사이드 패널에 묶어서 표시 | P1 |
 | FR-HIS-02 | 고객 단위 이력 화면: 전체 문의 수, 최근 문의, 평균 만족도 | P1 |
 
@@ -242,8 +244,8 @@ stateDiagram-v2
 | 현재 \ 다음 | ASSIGNED | IN_PROGRESS | RESOLVED | CLOSED | 수행자 |
 |---|:-:|:-:|:-:|:-:|---|
 | RECEIVED | ✅ | ❌ | ❌ | ❌ | SYSTEM(자동배정), LEAD/ADMIN |
-| ASSIGNED | ✅(재배정) | ✅ | ❌ | ❌ | 담당 AGENT, LEAD/ADMIN |
-| IN_PROGRESS | ✅(재배정) | - | ✅ | ❌ | 담당 AGENT, LEAD/ADMIN |
+| ASSIGNED | ✅(재배정) | ✅ | ❌ | ❌ | 담당 AGENT, LEAD/ADMIN (재배정은 LEAD/ADMIN만) |
+| IN_PROGRESS | ✅(재배정) | - | ✅ | ❌ | 담당 AGENT, LEAD/ADMIN (재배정은 LEAD/ADMIN만) |
 | RESOLVED | ❌ | ✅(고객 답글) | - | ✅ | SYSTEM, CUSTOMER |
 | CLOSED | ❌ | ❌ | ❌ | - | 종료(불변) |
 
