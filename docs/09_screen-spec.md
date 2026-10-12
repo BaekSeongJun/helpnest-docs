@@ -58,7 +58,7 @@ flowchart TB
 | CU-07 | 문의 상세 | `/my/inquiries/[id]` | 본인/Guest (비회원은 CU-05 조회 성공 후 이 화면으로 이동 — `AuthGuard`가 Guest 토큰 허용) | 백성준 (타임라인 `TicketTimeline`은 박민재) | 상태 배지, 본문·첨부, 답변 타임라인, 추가 답글 입력, 해결 상태면 "재문의" 안내 | `GET /tickets/{id}`, `POST /tickets/{id}/replies` |
 | CU-08 | 내 문의 목록 | `/my/inquiries` | CUSTOMER | 백성준 | 상태 필터, 목록(티켓번호, 제목, 상태, 최근 답변일) | `GET /tickets/my` |
 | CU-09 | 1:1 채팅 | `/chat` | CUSTOMER | 박민재 | 대기 화면(순번·경과시간) → 5분 초과 시 [문의로 남기기][계속 기다리기][나가기] → 상담 화면(메시지, 상담원 이름) → 종료 | `POST/DELETE /chat/rooms`, `/convert`, STOMP |
-| CU-10 | 내 정보 | `/my/profile` | 로그인 | 백성준 | 이름·연락처 수정, 비밀번호 변경(현재/새/확인) | `PATCH /members/me`, `/password` |
+| CU-10 | 내 정보 | `/my/profile` | 로그인 | 백성준 | 이름·연락처 수정, 비밀번호 변경(현재/새/확인), 회원 탈퇴(고객만, 확인 대화상자 → 로그아웃 → 홈) | `PATCH /members/me`, `/password` |
 | CU-11 | 만족도 설문 | `/survey/[token]` | 토큰 | 백성준 | 티켓 제목, 별점 5개, 의견, 제출 후 감사 화면, 만료·제출 완료 안내 | `GET/POST /surveys/{token}` |
 
 ### 2.3 콘솔 (상담원·팀장)
