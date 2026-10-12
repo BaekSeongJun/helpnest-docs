@@ -343,6 +343,7 @@ public repo 라서 EC2 IP·인스턴스 ID, RDS 엔드포인트, 보안그룹 ID
 | 롤백 | `sudo cp -p /opt/helpnest/helpnest-back.jar.bak /opt/helpnest/helpnest-back.jar && sudo systemctl restart helpnest-back`. 배포 후 `sha256sum /opt/helpnest/*.jar*` 로 `.bak` 이 **직전 운영 버전**(현재와 다른 해시)인지 확인. Flyway 는 되돌리지 않는다 — 스키마 롤백은 새 마이그레이션으로 |
 | 로그 | `sudo journalctl -u helpnest-back -f` / `-n 200` |
 | 환경변수만 변경 | 백엔드: env 파일 수정(백업 `.bak-<시각>`) → `sudo systemctl restart helpnest-back`. 프론트: Amplify 환경변수 수정 → **재빌드해야 반영**(빌드 결과물에 고정) |
+| 기능 플래그 켜기·끄기 | `EMAIL_VERIFICATION`, `GOOGLE_*`·`KAKAO_*`(§7.1)는 jar 변경 없이 env 수정 + 재시작으로 켜고 끈다. **화면이 먼저**: 메일·리다이렉트가 가리키는 프론트 페이지가 main 에 배포된 것을 확인한 뒤 켠다. 끄기 = `false` 또는 키 비우기 → 재시작 (§8.3) |
 | 코드 + 환경변수가 함께 바뀌는 릴리스 | **환경변수를 먼저** 두 곳에 넣고 → 머지·배포. 새 값을 읽지 않는 이전 버전에는 넣어 둬도 영향 없음 (예: back #107·front #59 의 `PROXY_SECRET`) |
 | Amplify 환경변수를 CLI 로 변경 | `aws amplify update-app --environment-variables` 는 **전체를 덮어쓴다** — 기존 키(`_LIVE_UPDATES` 포함)를 모두 함께 넣는다. 값에 쉼표·따옴표가 있으면 `--cli-input-json file://…` |
 | `FRONT_ORIGIN`(프론트 도메인) 변경 | S3 버킷 CORS 에 새 origin 을 **먼저 추가** → EC2 env `FRONT_ORIGIN` 수정·재시작(`/ws`·CORS·메일 링크) → 이전 주소는 Amplify 리다이렉트로 새 주소에 모은다. 쿠키 도메인이 바뀌므로 사용자는 한 번 다시 로그인 (10/8 `helpnest.kro.kr` 전환) |
@@ -359,3 +360,15 @@ public repo 라서 EC2 IP·인스턴스 ID, RDS 엔드포인트, 보안그룹 ID
 | 오래 열어 둔 탭이 재연결 시 `STOMP 인증 실패` 무한 반복 | 재연결 때 만료된 메모리 토큰 사용 | 재연결 전 토큰 재발급(front #58) |
 
 - QA·스모크 데이터 정리: SQL 초안(박민재) + 안전 검사 보완(신수진)으로 운영 DB 예행 실행(끝에 ROLLBACK) 통과 → **Final 직전** 실행 후 S3 객체 삭제
+
+### 8.3 운영 반영 기록 (10/12 이메일 인증·소셜 로그인)
+- 릴리스 back #130·front #73(dev → main, 3인 확인) → Amplify main 빌드 성공·`/verify-email` 200 확인 → EC2 env 에 `EMAIL_VERIFICATION=true` → `deploy.sh` 1회(`.bak` = 직전 운영 jar 해시, Flyway 3건 적용) → 소셜 키 4개 등록 후 재시작. env 는 바꿀 때마다 `.bak-<날짜>` 로 백업
+- 비밀값은 담당자 로컬 secret 파일에서 ssh 표준입력으로만 옮겼다(화면·로그·Issue 에 남기지 않음). 넣기 전 문자 형식·개수만 검사
+
+| 확인 | 결과 |
+|---|---|
+| 이메일 인증 (back #117) | 가입 201·PENDING → 인증 전 로그인 403 `AUTH_EMAIL_NOT_VERIFIED` → SES `EMAIL_VERIFY SENT`·Gmail 수신 → 링크 클릭 ACTIVE → 로그인 200 |
+| 소셜 로그인 (back #124) | `/api/auth/oauth2/authorize/{google,kakao}` 302 · `redirect_uri={FRONT_ORIGIN}/api/auth/oauth2/callback/…` → 브라우저에서 두 제공자 모두 로그인 성공, `member_social` 기록 |
+
+- 확인용 가입 계정·토큰·메일 기록은 확인 직후 삭제(이메일·id 일치 검사 후 트랜잭션)
+- 끄는 법: `EMAIL_VERIFICATION=false` 또는 해당 제공자 키를 비우고 `sudo systemctl restart helpnest-back`. 이미 PENDING 인 회원은 플래그를 꺼도 PENDING 으로 남아 로그인이 막힌다 — 인증 메일 재발송(`/verify-email` 실패 화면·로그인 안내)으로 인증하면 된다
